@@ -1,0 +1,112 @@
+# This file contains the GUI class, which provides a graphical user interface for the chess engine.
+# It displays the board and allows the user to click and drag pieces to make moves.
+
+import pygame
+import util
+
+class PygameGUI:
+    def __init__(self, game):
+        self.game = game
+        pygame.font.init()
+        self.screen_width = 640
+        self.screen_height = 640
+        self.light_square_color = (209, 139, 71)
+        self.dark_square_color = (255, 206, 158)
+        self.cell_size = 80
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        self.label_font = pygame.font.SysFont('Arial', 16)
+
+    def draw_board(self):
+        """Draws the chess board using .png files in the /assets folder.
+        Draws the pieces starting from the bottom left corner of the board."""
+        for i in range(8):
+            for j in range(8):
+                if (i + j) % 2 == 0:
+                    square_color = self.light_square_color
+                else:
+                    square_color = self.dark_square_color
+                pygame.draw.rect(self.screen, square_color,
+                                 (i * self.cell_size, j * self.cell_size, self.cell_size, self.cell_size))
+
+                # Draw file and rank labels
+                if i == 7:
+                    # draw file labels to the bottom most row of the board in the bottom right corner of the squares
+                    font_color = self.light_square_color if square_color == \
+                                                            self.dark_square_color else self.dark_square_color
+                    label = self.label_font.render(chr(ord('a') + j), True, font_color)
+                    label_rect = label.get_rect(center=((j + 0.85) * self.cell_size,
+                                                        (self.cell_size * 7) + self.cell_size * 0.9))
+                    self.screen.blit(label, label_rect)
+                if j == 0:
+                    # draw rank labels on the left side of the board in the top left corner of the squares
+                    font_color = self.light_square_color if square_color == \
+                                                            self.dark_square_color else self.dark_square_color
+                    label = self.label_font.render(str(8 - i), True, font_color)
+                    label_rect = label.get_rect(center=(self.cell_size * 0.1, (i + 0.15) * self.cell_size))
+                    self.screen.blit(label, label_rect)
+
+                piece = self.game.board.get_piece_by_coordinates(i, j)
+                if piece is not None:
+                    piece_image = pygame.image.load(f'assets/{piece.color}_{piece.type}.png')
+                    piece_image = pygame.transform.scale(piece_image, (self.cell_size, self.cell_size))
+                    self.screen.blit(piece_image, (i * self.cell_size, j * self.cell_size))
+
+    def update_board(self, board):
+        self.game.board = board
+        self.draw_board()
+
+    def run(self):
+        """Runs the GUI."""
+        pygame.init()
+        pygame.display.set_caption('amselChess 0.0.1')
+        clock = pygame.time.Clock()
+
+        running = True
+        dragging = False
+        selected_piece = None
+
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+                # Handle mouse events
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    x, y = self.mouse_to_board_coordinates(pos[0], pos[1])
+                    piece = self.game.board.get_piece_by_coordinates(x, y)
+                    if piece is not None and piece.color == self.game.current_player.color:
+                        selected_piece = piece
+                        dragging = True
+
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    print('Mouse button up')
+                    if dragging:
+                        pos = pygame.mouse.get_pos()
+                        x, y = self.mouse_to_board_coordinates(pos[0], pos[1])
+                        # Check if it's the turn of the player who owns the selected piece
+                        if selected_piece.color != self.game.current_player.color:
+                            print('Not your turn')
+                            selected_piece = None
+                            dragging = False
+                            continue
+                        # Check if the move is valid
+                        if self.game.board.is_legal_move(selected_piece, x, y):
+                            print('Legal move')
+                            print('Selected piece: {} {}'.format(selected_piece.color, selected_piece.type))
+                            print('Selected move: ', selected_piece.square, util.coordinates_to_square(x, y))
+                            self.game.make_move(selected_piece.square, util.coordinates_to_square(x, y))
+                        else:
+                            print('Illegal move')
+                        selected_piece = None
+                        dragging = False
+
+                self.update_board(self.game.board)
+                pygame.display.flip()
+                clock.tick(60)
+
+        pygame.quit()
+
+    def mouse_to_board_coordinates(self, mouse_x, mouse_y):
+        """Converts mouse coordinates to board coordinates."""
+        return mouse_x // self.cell_size, mouse_y // self.cell_size

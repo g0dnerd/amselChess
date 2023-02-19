@@ -8,17 +8,17 @@ from piece import *
 class Board:
     def __init__(self):
         # Initialize the board as an empty dictionary
-        self.board = {"a1": Rook("white", 0, 0), "b1": Knight("white", 1, 0), "c1": Bishop("white", 2, 0),
-                      "d1": Queen("white", 3, 0), "e1": King("white", 4, 0), "f1": Bishop("white", 5, 0),
-                      "g1": Knight("white", 6, 0), "h1": Rook("white", 7, 0), "a8": Rook("black", 0, 7),
-                      "b8": Knight("black", 1, 7), "c8": Bishop("black", 2, 7), "d8": Queen("black", 3, 7),
-                      "e8": King("black", 4, 7), "f8": Bishop("black", 5, 7), "g8": Knight("black", 6, 7),
-                      "h8": Rook("black", 7, 7)}
+        self.board = {"a1": Rook("white", 0, 7), "b1": Knight("white", 1, 7), "c1": Bishop("white", 2, 7),
+                      "d1": Queen("white", 3, 7), "e1": King("white", 4, 7), "f1": Bishop("white", 5, 7),
+                      "g1": Knight("white", 6, 7), "h1": Rook("white", 7, 7),
+                      "a8": Rook("black", 0, 0), "b8": Knight("black", 1, 0), "c8": Bishop("black", 2, 0),
+                      "d8": Queen("black", 3, 0), "e8": King("black", 4, 0), "f8": Bishop("black", 5, 0),
+                      "g8": Knight("black", 6, 0), "h8": Rook("black", 7, 0)}
         # Add the pieces to the board using the squares they start on as keys
         for i in range(8):
-            self.board[f"{chr(ord('a') + i)}2"] = Pawn("white", i, 1)
+            self.board[f"{chr(ord('a') + i)}2"] = Pawn("white", i, 6)
         for i in range(8):
-            self.board[f"{chr(ord('a') + i)}7"] = Pawn("black", i, 6)
+            self.board[f"{chr(ord('a') + i)}7"] = Pawn("black", i, 1)
         # Add the empty squares to the board
         for y in range(2, 6):
             for x in range(8):
@@ -56,12 +56,12 @@ class Board:
 
     def get_piece_by_coordinates(self, x, y):
         """Return the piece at the given position"""
-        return self.board[f"{chr(ord('a') + x)}{y + 1}"]
+        square = util.coordinates_to_square(x, y)
+        return self.get_piece_by_square(square)
 
-    def set_piece(self, position, piece):
+    def set_piece(self, square, piece):
         """Set the piece at the given position"""
-        x, y = position
-        self.board[y][x] = piece
+        self.board[square] = piece
 
     def move_piece(self, start, end):
         """Move the piece from the start position to the end position"""
@@ -72,12 +72,12 @@ class Board:
         piece.move(end)
         return captured_piece
 
-    def is_in_check(self, player):
+    def is_in_check(self, color):
         """Return True if the given player is in check, False otherwise"""
         # Get the king's position
-        king_position = self.get_king_position(player)
+        king_position = self.get_king_position(color)
         # Get the opponent's pieces
-        opponent_pieces = self.get_all_pieces(player.get_opponent_color())
+        opponent_pieces = self.get_all_pieces(util.get_opponent_color(color))
         # Check if any of the opponent's pieces can move to the king's position
         for piece in opponent_pieces:
             if self.is_legal_move(piece, king_position[0], king_position[1]):
@@ -89,11 +89,11 @@ class Board:
         check if the given move is legal for the given piece"""
         return (x, y) in piece.get_legal_moves(self)
 
-    def get_king_position(self, player):
+    def get_king_position(self, color):
         """Return the position of the given player's king"""
         for square in self.board:
             piece = self.get_piece_by_square(square)
-            if piece is not None and piece.color == player.color and piece.piece_type == 'K':
+            if piece is not None and piece.color == color and piece.type == 'king':
                 return piece.position
 
     def get_all_pieces(self, color):
@@ -139,13 +139,13 @@ class Board:
         # Check if the board has any pawns, queens, rooks or bishops
         for square in self.board:
             piece = self.get_piece_by_square(square)
-            if piece is not None and piece.piece_type in ['pawn', 'queen', 'rook', 'bishop']:
+            if piece is not None and piece.type in ['pawn', 'queen', 'rook', 'bishop']:
                 return False
         # Check if there are only two knights
         num_knights = 0
         for square in self.board:
             piece = self.get_piece_by_square(square)
-            if piece is not None and piece.piece_type == 'knight':
+            if piece is not None and piece.type == 'knight':
                 num_knights += 1
         if num_knights > 2:
             return False

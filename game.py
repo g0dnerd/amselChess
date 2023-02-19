@@ -3,6 +3,8 @@
 # checking game status.
 
 import copy
+
+import util
 from board import Board
 from player import Player
 
@@ -29,19 +31,26 @@ class Game:
     def make_move(self, start, end):
         """Make a move on the board and update the game state"""
         # Get the piece at the start position
+        print("Start square coordinates: ", util.square_to_coordinates(start))
         piece = self.board.get_piece_by_square(start)
+        legal_moves = piece.get_legal_moves(self.board)
+        print("Legal moves for target piece: ", legal_moves)
+        print("Make move called for move: ", piece.color, piece.type, piece.square, util.square_to_coordinates(end))
         if piece is None or piece.color != self.current_player.color:
             # If there is no piece at the start position or the piece is not the current player's color,
             # the move is invalid.
             return False
-        if end not in piece.get_legal_moves(self.board):
+        if util.square_to_coordinates(end) not in legal_moves:
+            print("Target square not in legal moves")
             # If the end position is not in the list of legal moves for the piece, the move is invalid.
             return False
-        captured_piece = self.board.move_piece(start, end)
-        self.move_history.append((start, end, captured_piece))
 
-        # Update the half move clock
-        if captured_piece is not None or piece.piece_type == 'pawn':
+        self.board.move_piece(start, end)
+        self.move_history.append((start, end))
+        self.current_player = Player(util.get_opponent_color(self.current_player.color))
+        captured_piece = self.board.get_piece_by_square(end)
+
+        if captured_piece is not None or piece.type == 'pawn':
             self.half_move_clock = 0
         else:
             self.half_move_clock += 1
@@ -51,10 +60,10 @@ class Game:
             self.full_move_number += 1
 
         # Update castling rights
-        if piece.piece_type == 'king':
+        if piece.type == 'king':
             self.castling_rights[piece.color]['K'] = False
             self.castling_rights[piece.color]['Q'] = False
-        elif piece.piece_type == 'rook':
+        elif piece.type == 'rook':
             if piece.color == 'white':
                 if piece.x == 0:
                     self.castling_rights['white']['Q'] = False
@@ -67,16 +76,16 @@ class Game:
                     self.castling_rights['black']['K'] = False
 
         # Check for game result
-        if self.board.is_in_checkmate(self.current_player.color):
-            self.game_result = 'checkmate'
-        elif self.board.is_in_stalemate(self.current_player.color):
-            self.game_result = 'stalemate'
-        elif self.board.is_insufficient_material():
-            self.game_result = 'insufficient material'
-        elif self.board.is_threefold_repetition():
-            self.game_result = 'threefold repetition'
-        elif self.board.is_draw_by_fifty_move_rule():
-            self.game_result = 'draw by fifty move rule'
+        # if self.board.is_in_checkmate(self.current_player.color):
+        #     self.game_result = 'checkmate'
+        # elif self.board.is_in_stalemate(self.current_player.color):
+        #     self.game_result = 'stalemate'
+        # elif self.board.is_insufficient_material():
+        #     self.game_result = 'insufficient material'
+        # elif self.board.is_threefold_repetition():
+        #     self.game_result = 'threefold repetition'
+        # elif self.board.is_draw_by_fifty_move_rule():
+        #     self.game_result = 'draw by fifty move rule'
 
         # Switch players
         if self.current_player.color == 'white':

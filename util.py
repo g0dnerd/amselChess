@@ -1,13 +1,25 @@
 # Contains some utility functions for the project
 
 def square_to_coordinates(square):
-    """Convert a square on the chessboard to coordinates. (0,0) corresponds to a1 and (7,7) corresponds to h8"""
+    """Convert a square on the chessboard to coordinates.
+    a1 is (0, 7), h1 is (7, 7), a8 is (0, 0) and h8 is (7, 0)"""
     x = ord(square[0]) - ord('a')
-    y = int(square[1]) - 1
+    y = 8 - int(square[1])
+
     return x, y
 
 
 def coordinates_to_square(x, y):
-    """Convert coordinates to a square on the chessboard. (0,0) corresponds to a1 and (7,7) corresponds to h8"""
-    square = f"{chr(ord('a') + x)}{y + 1}"
+    """Convert coordinates to a square on the chessboard.
+    a1 is (0, 7), h1 is (7, 7), a8 is (0, 0) and h8 is (7, 0)"""
+    square = f"{chr(ord('a') + x)}{8 - y}"
+
     return square
+
+
+def get_opponent_color(color):
+    """Return the opponent's color"""
+    if color == 'white':
+        return 'black'
+    else:
+        return 'white'
