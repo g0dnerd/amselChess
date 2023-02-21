@@ -4,7 +4,6 @@
 # which inherit from Piece and implement the get_legal_moves method.
 
 import util
-import copy
 
 
 class Piece:
@@ -34,6 +33,13 @@ class Piece:
         # this method should be overridden by subclasses
         raise NotImplementedError
 
+    # def is_legal_move(self, board, target_x, target_y):
+    #     target_coordinates = (target_x, target_y)
+    #     if target_coordinates in self.get_legal_moves(board):
+    #         return True
+    #     else:
+    #         return False
+
 
 class Pawn(Piece):
     def __init__(self, color, x, y):
@@ -47,6 +53,8 @@ class Pawn(Piece):
             self.letter = 'P'
         else:
             self.letter = 'p'
+        # add the en passant flag
+        self.en_passant = False
 
     def get_legal_moves(self, board):
         # Checks for legal moves for a pawn. Considers the following cases: 1. Pawn has not moved yet (can move 1 or
@@ -96,7 +104,7 @@ class Pawn(Piece):
                         board.get_piece_by_coordinates(x + 1, y).color == 'black' and \
                         board.get_piece_by_coordinates(x + 1, y).type == 'pawn' and \
                         board.get_piece_by_coordinates(x + 1, y).moved and \
-                        board.get_piece_by_coordinates(x + 1, y).position[1] == 1:
+                        board.get_piece_by_coordinates(x + 1, y).position[1] == 3:
                     moves.append((x + 1, y - 1))
             # if the pawn can capture a piece en passant to the left
             if x - 1 >= 0 and y - 1 >= 0:
@@ -104,7 +112,7 @@ class Pawn(Piece):
                         board.get_piece_by_coordinates(x - 1, y).color == 'black' and \
                         board.get_piece_by_coordinates(x - 1, y).type == 'pawn' and \
                         board.get_piece_by_coordinates(x - 1, y).moved and \
-                        board.get_piece_by_coordinates(x - 1, y).position[1] == 1:
+                        board.get_piece_by_coordinates(x - 1, y).position[1] == 3:
                     moves.append((x - 1, y - 1))
         # if the pawn is black
         else:
@@ -140,7 +148,7 @@ class Pawn(Piece):
                         board.get_piece_by_coordinates(x + 1, y).color == 'white' and \
                         board.get_piece_by_coordinates(x + 1, y).type == 'pawn' and \
                         board.get_piece_by_coordinates(x + 1, y).moved and \
-                        board.get_piece_by_coordinates(x + 1, y).position[1] == 6:
+                        board.get_piece_by_coordinates(x + 1, y).position[1] == 4:
                     moves.append((x + 1, y + 1))
             # if the pawn can capture a piece en passant to the left
             if x - 1 >= 0 and y + 1 < 8:
@@ -148,7 +156,7 @@ class Pawn(Piece):
                         board.get_piece_by_coordinates(x - 1, y).color == 'white' and \
                         board.get_piece_by_coordinates(x - 1, y).type == 'pawn' and \
                         board.get_piece_by_coordinates(x - 1, y).moved and \
-                        board.get_piece_by_coordinates(x - 1, y).position[1] == 6:
+                        board.get_piece_by_coordinates(x - 1, y).position[1] == 4:
                     moves.append((x - 1, y + 1))
         # return the list of legal moves
         return moves
@@ -259,18 +267,6 @@ class Knight(Piece):
                         board.get_piece_by_coordinates(x - 2, y + 1).color == 'white':
                     moves.append((x - 2, y + 1))
 
-        # iterate through the list of legal moves and remove any moves that would put the king in check
-        # for move in moves:
-            # # copy the board
-            # new_board = copy.deepcopy(board)
-            # start = util.coordinates_to_square(self.position[0], self.position[1])
-            # end = util.coordinates_to_square(move[0], move[1])
-            # # move the knight to the new position
-            # new_board.move_piece(start, end)
-            # # if the king is in check
-            # if new_board.is_in_check(color):
-                # # remove the move from the list of legal moves
-                # moves.remove(move)
         return moves
 
 
@@ -433,9 +429,9 @@ class Rook(Piece):
             # if the rook can move up
             for i in range(1, 8):
                 if y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x) is None:
+                    if board.get_piece_by_coordinates(x, y - i) is None:
                         moves.append((x, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x).color == 'black':
+                    elif board.get_piece_by_coordinates(x, y - i).color == 'black':
                         moves.append((x, y - i))
                         break
                     else:
@@ -445,9 +441,9 @@ class Rook(Piece):
             # if the rook can move down
             for i in range(1, 8):
                 if y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x) is None:
+                    if board.get_piece_by_coordinates(x, y + i) is None:
                         moves.append((x, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x).color == 'black':
+                    elif board.get_piece_by_coordinates(x, y + i).color == 'black':
                         moves.append((x, y + i))
                         break
                     else:
@@ -457,9 +453,9 @@ class Rook(Piece):
             # if the rook can move to the left
             for i in range(1, 8):
                 if x - i >= 0:
-                    if board.get_piece_by_coordinates(y, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y) is None:
                         moves.append((x - i, y))
-                    elif board.get_piece_by_coordinates(y, x - i).color == 'black':
+                    elif board.get_piece_by_coordinates(x - i, y).color == 'black':
                         moves.append((x - i, y))
                         break
                     else:
@@ -469,9 +465,9 @@ class Rook(Piece):
             # if the rook can move to the right
             for i in range(1, 8):
                 if x + i <= 7:
-                    if board.get_piece_by_coordinates(y, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y) is None:
                         moves.append((x + i, y))
-                    elif board.get_piece_by_coordinates(y, x + i).color == 'black':
+                    elif board.get_piece_by_coordinates(x + i, y).color == 'black':
                         moves.append((x + i, y))
                         break
                     else:
@@ -483,9 +479,9 @@ class Rook(Piece):
             # if the rook can move up
             for i in range(1, 8):
                 if y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x) is None:
+                    if board.get_piece_by_coordinates(x, y - i) is None:
                         moves.append((x, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x).color == 'white':
+                    elif board.get_piece_by_coordinates(x, y - i).color == 'white':
                         moves.append((x, y - i))
                         break
                     else:
@@ -529,19 +525,7 @@ class Rook(Piece):
                 else:
                     break
 
-        # # iterate through the list of legal moves and remove any moves that would put the king in check
-        # for move in moves:
-        #     # copy the board
-        #     new_board = copy.deepcopy(board)
-        #     start = util.coordinates_to_square(self.position[0], self.position[1])
-        #     end = util.coordinates_to_square(move[0], move[1])
-        #     # move the rook to the new position
-        #     new_board.move_piece(start, end)
-        #     # if the king is in check
-        #     if new_board.is_in_check(color):
-        #         # remove the move from the list of legal moves
-        #         moves.remove(move)
-        # return moves
+        return moves
 
 
 class Queen(Piece):
@@ -566,10 +550,11 @@ class Queen(Piece):
         if color == 'white':
             # if the queen can move up
             for i in range(1, 8):
+                # if the path up is clear
                 if y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x) is None:
+                    if board.get_piece_by_coordinates(x, y - i) is None:
                         moves.append((x, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x).color == 'black':
+                    elif board.get_piece_by_coordinates(x, y - i).color == 'black':
                         moves.append((x, y - i))
                         break
                     else:
@@ -579,9 +564,9 @@ class Queen(Piece):
             # if the queen can move down
             for i in range(1, 8):
                 if y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x) is None:
+                    if board.get_piece_by_coordinates(x, y + i) is None:
                         moves.append((x, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x).color == 'black':
+                    elif board.get_piece_by_coordinates(x, y + i).color == 'black':
                         moves.append((x, y + i))
                         break
                     else:
@@ -591,9 +576,9 @@ class Queen(Piece):
             # if the queen can move to the left
             for i in range(1, 8):
                 if x - i >= 0:
-                    if board.get_piece_by_coordinates(y, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y) is None:
                         moves.append((x - i, y))
-                    elif board.get_piece_by_coordinates(y, x - i).color == 'black':
+                    elif board.get_piece_by_coordinates(x - i, y).color == 'black':
                         moves.append((x - i, y))
                         break
                     else:
@@ -603,9 +588,9 @@ class Queen(Piece):
             # if the queen can move to the right
             for i in range(1, 8):
                 if x + i <= 7:
-                    if board.get_piece_by_coordinates(y, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y) is None:
                         moves.append((x + i, y))
-                    elif board.get_piece_by_coordinates(y, x + i).color == 'black':
+                    elif board.get_piece_by_coordinates(x + i, y).color == 'black':
                         moves.append((x + i, y))
                         break
                     else:
@@ -615,9 +600,9 @@ class Queen(Piece):
             # if the queen can move up and to the left
             for i in range(1, 8):
                 if x - i >= 0 and y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y - i) is None:
                         moves.append((x - i, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x - i).color == 'black':
+                    elif board.get_piece_by_coordinates(x - i, y - i).color == 'black':
                         moves.append((x - i, y - i))
                         break
                     else:
@@ -627,9 +612,9 @@ class Queen(Piece):
             # if the queen can move up and to the right
             for i in range(1, 8):
                 if x + i <= 7 and y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y - i) is None:
                         moves.append((x + i, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x + i).color == 'black':
+                    elif board.get_piece_by_coordinates(x + i, y - i).color == 'black':
                         moves.append((x + i, y - i))
                         break
                     else:
@@ -639,9 +624,9 @@ class Queen(Piece):
             # if the queen can move down and to the left
             for i in range(1, 8):
                 if x - i >= 0 and y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y + i) is None:
                         moves.append((x - i, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x - i).color == 'black':
+                    elif board.get_piece_by_coordinates(x - i, y + i).color == 'black':
                         moves.append((x - i, y + i))
                         break
                     else:
@@ -651,9 +636,9 @@ class Queen(Piece):
             # if the queen can move down and to the right
             for i in range(1, 8):
                 if x + i <= 7 and y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y + i) is None:
                         moves.append((x + i, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x + i).color == 'black':
+                    elif board.get_piece_by_coordinates(x + i, y + i).color == 'black':
                         moves.append((x + i, y + i))
                         break
                     else:
@@ -665,9 +650,9 @@ class Queen(Piece):
             # if the queen can move up
             for i in range(1, 8):
                 if y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x) is None:
+                    if board.get_piece_by_coordinates(x, y - i) is None:
                         moves.append((x, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x).color == 'white':
+                    elif board.get_piece_by_coordinates(x, y - i).color == 'white':
                         moves.append((x, y - i))
                         break
                     else:
@@ -677,9 +662,9 @@ class Queen(Piece):
             # if the queen can move down
             for i in range(1, 8):
                 if y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x) is None:
+                    if board.get_piece_by_coordinates(x, y + i) is None:
                         moves.append((x, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x).color == 'white':
+                    elif board.get_piece_by_coordinates(x, y + i).color == 'white':
                         moves.append((x, y + i))
                         break
                     else:
@@ -689,9 +674,9 @@ class Queen(Piece):
             # if the queen can move to the left
             for i in range(1, 8):
                 if x - i >= 0:
-                    if board.get_piece_by_coordinates(y, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y) is None:
                         moves.append((x - i, y))
-                    elif board.get_piece_by_coordinates(y, x - i).color == 'white':
+                    elif board.get_piece_by_coordinates(x - i, y).color == 'white':
                         moves.append((x - i, y))
                         break
                     else:
@@ -701,9 +686,9 @@ class Queen(Piece):
             # if the queen can move to the right
             for i in range(1, 8):
                 if x + i <= 7:
-                    if board.get_piece_by_coordinates(y, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y) is None:
                         moves.append((x + i, y))
-                    elif board.get_piece_by_coordinates(y, x + i).color == 'white':
+                    elif board.get_piece_by_coordinates(x + i, y).color == 'white':
                         moves.append((x + i, y))
                         break
                     else:
@@ -713,9 +698,9 @@ class Queen(Piece):
             # if the queen can move up and to the left
             for i in range(1, 8):
                 if x - i >= 0 and y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y - i) is None:
                         moves.append((x - i, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x - i).color == 'white':
+                    elif board.get_piece_by_coordinates(x - i, y - i).color == 'white':
                         moves.append((x - i, y - i))
                         break
                     else:
@@ -725,9 +710,9 @@ class Queen(Piece):
             # if the queen can move up and to the right
             for i in range(1, 8):
                 if x + i <= 7 and y - i >= 0:
-                    if board.get_piece_by_coordinates(y - i, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y - i) is None:
                         moves.append((x + i, y - i))
-                    elif board.get_piece_by_coordinates(y - i, x + i).color == 'white':
+                    elif board.get_piece_by_coordinates(x + i, y - i).color == 'white':
                         moves.append((x + i, y - i))
                         break
                     else:
@@ -737,9 +722,9 @@ class Queen(Piece):
             # if the queen can move down and to the left
             for i in range(1, 8):
                 if x - i >= 0 and y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y + i) is None:
                         moves.append((x - i, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x - i).color == 'white':
+                    elif board.get_piece_by_coordinates(x - i, y + i).color == 'white':
                         moves.append((x - i, y + i))
                         break
                     else:
@@ -749,9 +734,9 @@ class Queen(Piece):
             # if the queen can move down and to the right
             for i in range(1, 8):
                 if x + i <= 7 and y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y + i) is None:
                         moves.append((x + i, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x + i).color == 'white':
+                    elif board.get_piece_by_coordinates(x + i, y + i).color == 'white':
                         moves.append((x + i, y + i))
                         break
                     else:
@@ -759,19 +744,7 @@ class Queen(Piece):
                 else:
                     break
 
-        # iterate through the list of legal moves and remove any moves that would put the king in check
-        # for move in moves:
-            # # copy the board
-            # new_board = copy.deepcopy(board)
-            # start = util.coordinates_to_square(self.position[0], self.position[1])
-            # end = util.coordinates_to_square(move[0], move[1])
-            # # move the queen to the new position
-            # new_board.move_piece(start, end)
-            # # if the king is in check
-            # if new_board.is_in_check(color):
-                # # remove the move from the list of legal moves
-                # moves.remove(move)
-        # return moves
+        return moves
 
 
 class King(Piece):
@@ -799,154 +772,102 @@ class King(Piece):
         if color == 'white':
             # if the king can move up
             if y - 1 >= 0:
-                if board.get_piece_by_coordinates(y - 1, x) is None:
-                    if not board.would_be_in_check(self, (x, y - 1)):
-                        moves.append((x, y - 1))
-                elif board.get_piece_by_coordinates(y - 1, x).color == 'black':
-                    if not board.would_be_in_check(self, (x, y - 1)):
-                        moves.append((x, y - 1))
+                if board.get_piece_by_coordinates(x, y - 1) is None:
+                    moves.append((x, y - 1))
+                elif board.get_piece_by_coordinates(x, y - 1).color == 'black':
+                    moves.append((x, y - 1))
             # if the king can move down
             if y + 1 <= 7:
-                if board.get_piece_by_coordinates(y + 1, x) is None:
-                    if not board.would_be_in_check(self, (x, y + 1)):
-                        moves.append((x, y + 1))
-                elif board.get_piece_by_coordinates(y + 1, x).color == 'black':
-                    if not board.would_be_in_check(self, (x, y + 1)):
-                        moves.append((x, y + 1))
+                if board.get_piece_by_coordinates(x, y + 1) is None:
+                    moves.append((x, y + 1))
+                elif board.get_piece_by_coordinates(x, y + 1).color == 'black':
+                    moves.append((x, y + 1))
             # if the king can move to the left
             if x - 1 >= 0:
-                if board.get_piece_by_coordinates(y, x - 1) is None:
-                    if not board.would_be_in_check(self, (x - 1, y)):
-                        moves.append((x - 1, y))
-                elif board.get_piece_by_coordinates(y, x - 1).color == 'black':
-                    if not board.would_be_in_check(self, (x - 1, y)):
-                        moves.append((x - 1, y))
+                if board.get_piece_by_coordinates(x - 1, y) is None:
+                    moves.append((x - 1, y))
+                elif board.get_piece_by_coordinates(x - 1, y).color == 'black':
+                    moves.append((x - 1, y))
             # if the king can move to the right
             if x + 1 <= 7:
-                if board.get_piece_by_coordinates(y, x + 1) is None:
-                    if not board.would_be_in_check(self, (x + 1, y)):
-                        moves.append((x + 1, y))
-                elif board.get_piece_by_coordinates(y, x + 1).color == 'black':
-                    if not board.would_be_in_check(self, (x + 1, y)):
-                        moves.append((x + 1, y))
+                if board.get_piece_by_coordinates(x + 1, y) is None:
+                    moves.append((x + 1, y))
+                elif board.get_piece_by_coordinates(x + 1, y).color == 'black':
+                    moves.append((x + 1, y))
             # if the king can move up and to the left
             if x - 1 >= 0 and y - 1 >= 0:
-                if board.get_piece_by_coordinates(y - 1, x - 1) is None:
-                    if not board.would_be_in_check(self, (x - 1, y - 1)):
-                        moves.append((x - 1, y - 1))
-                elif board.get_piece_by_coordinates(y - 1, x - 1).color == 'black':
-                    if not board.would_be_in_check(self, (x - 1, y - 1)):
-                        moves.append((x - 1, y - 1))
+                if board.get_piece_by_coordinates(x - 1, y - 1) is None:
+                    moves.append((x - 1, y - 1))
+                elif board.get_piece_by_coordinates(x - 1, y - 1).color == 'black':
+                    moves.append((x - 1, y - 1))
             # if the king can move up and to the right
             if x + 1 <= 7 and y - 1 >= 0:
-                if board.get_piece_by_coordinates(y - 1, x + 1) is None:
-                    if not board.would_be_in_check(self, (x + 1, y - 1)):
-                        moves.append((x + 1, y - 1))
-                elif board.get_piece_by_coordinates(y - 1, x + 1).color == 'black':
-                    if not board.would_be_in_check(self, (x + 1, y - 1)):
-                        moves.append((x + 1, y - 1))
+                if board.get_piece_by_coordinates(x + 1, y - 1) is None:
+                    moves.append((x + 1, y - 1))
+                elif board.get_piece_by_coordinates(x + 1, y - 1).color == 'black':
+                    moves.append((x + 1, y - 1))
             # if the king can move down and to the left
             if x - 1 >= 0 and y + 1 <= 7:
-                if board.get_piece_by_coordinates(y + 1, x - 1) is None:
-                    if not board.would_be_in_check(self, (x - 1, y + 1)):
-                        moves.append((x - 1, y + 1))
-                elif board.get_piece_by_coordinates(y + 1, x - 1).color == 'black':
-                    if not board.would_be_in_check(self, (x - 1, y + 1)):
-                        moves.append((x - 1, y + 1))
+                if board.get_piece_by_coordinates(x - 1, y + 1) is None:
+                    moves.append((x - 1, y + 1))
+                elif board.get_piece_by_coordinates(x - 1, y + 1).color == 'black':
+                    moves.append((x - 1, y + 1))
             # if the king can move down and to the right
             if x + 1 <= 7 and y + 1 <= 7:
-                if board.get_piece_by_coordinates(y + 1, x + 1) is None:
-                    if not board.would_be_in_check(self, (x + 1, y + 1)):
-                        moves.append((x + 1, y + 1))
-                elif board.get_piece_by_coordinates(y + 1, x + 1).color == 'black':
-                    if not board.would_be_in_check(self, (x + 1, y + 1)):
-                        moves.append((x + 1, y + 1))
-            # if the king can castle
-            if not self.moved:
-                # if the king can castle kingside
-                if board.get_piece_by_coordinates(7, 5) is None and board.get_piece_by_coordinates(7, 6) is None:
-                    if not board.would_be_in_check(self, (5, 7)) and not board.would_be_in_check(self, (6, 7)):
-                        moves.append((6, 7))
-                # if the king can castle queenside
-                if board.get_piece_by_coordinates(7, 1) is None and board.get_piece_by_coordinates(7, 2) is None and board.get_piece_by_coordinates(7, 3) is None:
-                    if not board.would_be_in_check(self, (1, 7)) and not board.would_be_in_check(self, (
-                            2, 7)) and not board.would_be_in_check(self, (3, 7)):
-                        moves.append((2, 7))
+                if board.get_piece_by_coordinates(x + 1, y + 1) is None:
+                    moves.append((x + 1, y + 1))
+                elif board.get_piece_by_coordinates(x + 1, y + 1).color == 'black':
+                    moves.append((x + 1, y + 1))
         # if the king is black
         else:
             # if the king can move up
             if y - 1 >= 0:
-                if board.get_piece_by_coordinates(y - 1, x) is None:
-                    if not board.would_be_in_check(self, (x, y - 1)):
-                        moves.append((x, y - 1))
-                elif board.get_piece_by_coordinates(y - 1, x).color == 'white':
-                    if not board.would_be_in_check(self, (x, y - 1)):
-                        moves.append((x, y - 1))
+                if board.get_piece_by_coordinates(x, y - 1) is None:
+                    moves.append((x, y - 1))
+                elif board.get_piece_by_coordinates(x, y - 1).color == 'white':
+                    moves.append((x, y - 1))
             # if the king can move down
             if y + 1 <= 7:
-                if board.get_piece_by_coordinates(y + 1, x) is None:
-                    if not board.would_be_in_check(self, (x, y + 1)):
-                        moves.append((x, y + 1))
-                elif board.get_piece_by_coordinates(y + 1, x).color == 'white':
-                    if not board.would_be_in_check(self, (x, y + 1)):
-                        moves.append((x, y + 1))
+                if board.get_piece_by_coordinates(x, y + 1) is None:
+                    moves.append((x, y + 1))
+                elif board.get_piece_by_coordinates(x, y + 1).color == 'white':
+                    moves.append((x, y + 1))
             # if the king can move to the left
             if x - 1 >= 0:
-                if board.get_piece_by_coordinates(y, x - 1) is None:
-                    if not board.would_be_in_check(self, (x - 1, y)):
-                        moves.append((x - 1, y))
-                elif board.get_piece_by_coordinates(y, x - 1).color == 'white':
-                    if not board.would_be_in_check(self, (x - 1, y)):
-                        moves.append((x - 1, y))
+                if board.get_piece_by_coordinates(x - 1, y) is None:
+                    moves.append((x - 1, y))
+                elif board.get_piece_by_coordinates(x - 1, y).color == 'white':
+                    moves.append((x - 1, y))
             # if the king can move to the right
             if x + 1 <= 7:
-                if board.get_piece_by_coordinates(y, x + 1) is None:
-                    if not board.would_be_in_check(self, (x + 1, y)):
-                        moves.append((x + 1, y))
-                elif board.get_piece_by_coordinates(y, x + 1).color == 'white':
-                    if not board.would_be_in_check(self, (x + 1, y)):
-                        moves.append((x + 1, y))
+                if board.get_piece_by_coordinates(x + 1, y) is None:
+                    moves.append((x + 1, y))
+                elif board.get_piece_by_coordinates(x + 1, y).color == 'white':
+                    moves.append((x + 1, y))
             # if the king can move up and to the left
             if x - 1 >= 0 and y - 1 >= 0:
-                if board.get_piece_by_coordinates(y - 1, x - 1) is None:
-                    if not board.would_be_in_check(self, (x - 1, y - 1)):
-                        moves.append((x - 1, y - 1))
-                elif board.get_piece_by_coordinates(y - 1, x - 1).color == 'white':
-                    if not board.would_be_in_check(self, (x - 1, y - 1)):
-                        moves.append((x - 1, y - 1))
+                if board.get_piece_by_coordinates(x - 1, y - 1) is None:
+                    moves.append((x - 1, y - 1))
+                elif board.get_piece_by_coordinates(x - 1, y - 1).color == 'white':
+                    moves.append((x - 1, y - 1))
             # if the king can move up and to the right
             if x + 1 <= 7 and y - 1 >= 0:
-                if board.get_piece_by_coordinates(y - 1, x + 1) is None:
-                    if not board.would_be_in_check(self, (x + 1, y - 1)):
-                        moves.append((x + 1, y - 1))
-                elif board.get_piece_by_coordinates(y - 1, x + 1).color == 'white':
-                    if not board.would_be_in_check(self, (x + 1, y - 1)):
-                        moves.append((x + 1, y - 1))
+                if board.get_piece_by_coordinates(x + 1, y - 1) is None:
+                    moves.append((x + 1, y - 1))
+                elif board.get_piece_by_coordinates(x + 1, y - 1).color == 'white':
+                    moves.append((x + 1, y - 1))
             # if the king can move down and to the left
             if x - 1 >= 0 and y + 1 <= 7:
-                if board.get_piece_by_coordinates(y + 1, x - 1) is None:
-                    if not board.would_be_in_check(self, (x - 1, y + 1)):
-                        moves.append((x - 1, y + 1))
-                elif board.get_piece_by_coordinates(y + 1, x - 1).color == 'white':
-                    if not board.would_be_in_check(self, (x - 1, y + 1)):
-                        moves.append((x - 1, y + 1))
+                if board.get_piece_by_coordinates(x - 1, y + 1) is None:
+                    moves.append((x - 1, y + 1))
+                elif board.get_piece_by_coordinates(x - 1, y + 1).color == 'white':
+                    moves.append((x - 1, y + 1))
             # if the king can move down and to the right
             if x + 1 <= 7 and y + 1 <= 7:
-                if board.get_piece_by_coordinates(y + 1, x + 1) is None:
-                    if not board.would_be_in_check(self, (x + 1, y + 1)):
-                        moves.append((x + 1, y + 1))
-                elif board.get_piece_by_coordinates(y + 1, x + 1).color == 'white':
-                    if not board.would_be_in_check(self, (x + 1, y + 1)):
-                        moves.append((x + 1, y + 1))
-            # if the king can castle
-            if not self.moved:
-                # if the king can castle kingside
-                if board.get_piece_by_coordinates(0, 5) is None and board.get_piece_by_coordinates(0, 6) is None:
-                    if not board.would_be_in_check(self, (5, 0)) and not board.would_be_in_check(self, (6, 0)):
-                        moves.append((6, 0))
-                # if the king can castle queenside
-                if board.get_piece_by_coordinates(0, 1) is None and board.get_piece_by_coordinates(0, 2) is None and board.get_piece_by_coordinates(0, 3) is None:
-                    if not board.would_be_in_check(self, (1, 0)) and not board.would_be_in_check(self, (
-                            2, 0)) and not board.would_be_in_check(self, (3, 0)):
-                        moves.append((2, 0))
+                if board.get_piece_by_coordinates(x + 1, y + 1) is None:
+                    moves.append((x + 1, y + 1))
+                elif board.get_piece_by_coordinates(x + 1, y + 1).color == 'white':
+                    moves.append((x + 1, y + 1))
         return moves
+
+

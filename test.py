@@ -52,10 +52,6 @@ class TestChessEngine(unittest.TestCase):
         # assert that the white bishop on c1 has no legal moves
         self.assertCountEqual(white_bishop.get_legal_moves(self.game.board), [])
 
-    def test_print_board(self):
-        # Tests the print_board method
-        print(self.game.board)
-
     def test_gui(self):
         # Tests the GUI
         gui = PygameGUI(self.game)

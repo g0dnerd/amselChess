@@ -2,19 +2,22 @@
 # It displays the board and allows the user to click and drag pieces to make moves.
 
 import pygame
+import pygame.freetype
 import util
+
 
 class PygameGUI:
     def __init__(self, game):
+        pygame.freetype.init()
         self.game = game
-        pygame.font.init()
-        self.screen_width = 640
+        self.screen_width = 1280
         self.screen_height = 640
         self.light_square_color = (209, 139, 71)
         self.dark_square_color = (255, 206, 158)
         self.cell_size = 80
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-        self.label_font = pygame.font.SysFont('Arial', 16)
+        self.label_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 16)
+        self.annotation_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 16)
 
     def draw_board(self):
         """Draws the chess board using .png files in the /assets folder.
@@ -33,7 +36,7 @@ class PygameGUI:
                     # draw file labels to the bottom most row of the board in the bottom right corner of the squares
                     font_color = self.light_square_color if square_color == \
                                                             self.dark_square_color else self.dark_square_color
-                    label = self.label_font.render(chr(ord('a') + j), True, font_color)
+                    label, _ = self.label_font.render(chr(ord('a') + j), font_color)
                     label_rect = label.get_rect(center=((j + 0.85) * self.cell_size,
                                                         (self.cell_size * 7) + self.cell_size * 0.9))
                     self.screen.blit(label, label_rect)
@@ -41,7 +44,7 @@ class PygameGUI:
                     # draw rank labels on the left side of the board in the top left corner of the squares
                     font_color = self.light_square_color if square_color == \
                                                             self.dark_square_color else self.dark_square_color
-                    label = self.label_font.render(str(8 - i), True, font_color)
+                    label, _ = self.label_font.render(str(8 - i), font_color)
                     label_rect = label.get_rect(center=(self.cell_size * 0.1, (i + 0.15) * self.cell_size))
                     self.screen.blit(label, label_rect)
 
@@ -54,6 +57,39 @@ class PygameGUI:
     def update_board(self, board):
         self.game.board = board
         self.draw_board()
+
+    def update_annotations(self, game):
+        """Updates the annotations in the right half of the screen.
+        Annotations include the current player, the move history and the game result."""
+        # print('Updating annotations')
+
+        # set up current player text
+        current_player_text, _ = self.annotation_font.render(
+            f'Current player: {self.game.current_player}', (255, 255, 255))
+        current_player_rect = current_player_text.get_rect(
+            midleft=(self.screen_width // 2 + 50, self.screen_height // 2 - 50))
+
+        # set up PGN text
+        pgn_text, _ = self.annotation_font.render(f'PGN: {self.game.pgn}', (255, 255, 255))
+        pgn_rect = pgn_text.get_rect(midleft=(self.screen_width // 2 + 50, self.screen_height // 2))
+
+        # set up game result text
+        game_result = self.game.get_game_result()
+        if game_result == 'checkmate':
+            if self.game.current_player == 'white':
+                game_result = 'black wins!'
+            else:
+                game_result = 'white wins!'
+        game_result_text, _ = self.annotation_font.render(f'Game Result: {game_result}', (255, 255, 255))
+        game_result_rect = game_result_text.get_rect(midleft=(self.screen_width // 2 + 50, self.screen_height // 2 + 50))
+
+        # draw background color over the right half of the screen
+        pygame.draw.rect(self.screen, (67, 69, 74), (
+            self.screen_width // 2, 0, self.screen_width // 2, self.screen_height))
+
+        self.screen.blit(current_player_text, current_player_rect)
+        self.screen.blit(pgn_text, pgn_rect)
+        self.screen.blit(game_result_text, game_result_rect)
 
     def run(self):
         """Runs the GUI."""
@@ -75,23 +111,24 @@ class PygameGUI:
                     pos = pygame.mouse.get_pos()
                     x, y = self.mouse_to_board_coordinates(pos[0], pos[1])
                     piece = self.game.board.get_piece_by_coordinates(x, y)
-                    if piece is not None and piece.color == self.game.current_player.color:
+                    if piece is not None and piece.color == self.game.current_player:
                         selected_piece = piece
                         dragging = True
 
                 elif event.type == pygame.MOUSEBUTTONUP:
                     print('Mouse button up')
+                    print('current player: ', self.game.current_player)
                     if dragging:
                         pos = pygame.mouse.get_pos()
                         x, y = self.mouse_to_board_coordinates(pos[0], pos[1])
                         # Check if it's the turn of the player who owns the selected piece
-                        if selected_piece.color != self.game.current_player.color:
+                        if selected_piece.color != self.game.current_player:
                             print('Not your turn')
                             selected_piece = None
                             dragging = False
                             continue
                         # Check if the move is valid
-                        if self.game.board.is_legal_move(selected_piece, x, y):
+                        if self.game.is_valid_move(selected_piece.square, util.coordinates_to_square(x, y)):
                             print('Legal move')
                             print('Selected piece: {} {}'.format(selected_piece.color, selected_piece.type))
                             print('Selected move: ', selected_piece.square, util.coordinates_to_square(x, y))
@@ -102,6 +139,7 @@ class PygameGUI:
                         dragging = False
 
                 self.update_board(self.game.board)
+                self.update_annotations(self.game)
                 pygame.display.flip()
                 clock.tick(60)
 
