@@ -9,13 +9,13 @@ import util
 class PygameGUI:
     def __init__(self, game):
         pygame.freetype.init()
-        self.BUTTON_COLOR = (100, 100, 100)
-        self.BUTTON_HOVER_COLOR = (73, 99, 67)
-        self.BUTTON_TEXT_COLOR = (255, 255, 255)
-        self.SCREEN_WIDTH = 1280
-        self.SCREEN_HEIGHT = 640
         self.light_square_color = (209, 139, 71)
         self.dark_square_color = (255, 206, 158)
+        self.SCREEN_HEIGHT = 640
+        self.BUTTON_COLOR = (100, 100, 100)
+        self.BUTTON_TEXT_COLOR = (255, 255, 255)
+        self.SCREEN_WIDTH = 1280
+        self.button_hover_color = self.light_square_color
         self.cell_size = 80
         self.game = game
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
@@ -83,6 +83,7 @@ class PygameGUI:
         else:
             self.light_square_color = (209, 139, 71)
             self.dark_square_color = (255, 206, 158)
+        self.button_hover_color = self.light_square_color
 
     def update_board(self, board):
         self.game.board = board
@@ -96,7 +97,7 @@ class PygameGUI:
             self.screen.blit(text, text_rect)
 
             if button['rect'].collidepoint(pygame.mouse.get_pos()):
-                pygame.draw.rect(self.screen, self.BUTTON_HOVER_COLOR, button['rect'])
+                pygame.draw.rect(self.screen, self.button_hover_color, button['rect'])
                 text, _ = self.label_font.render(button['text'], self.BUTTON_TEXT_COLOR)
                 text_rect = text.get_rect(center=button['rect'].center)
                 self.screen.blit(text, text_rect)

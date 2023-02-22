@@ -883,6 +883,7 @@ class King(Piece):
                     moves.append((x + 1, y + 1))
                 elif board.get_piece_by_coordinates(x + 1, y + 1).color == 'black':
                     moves.append((x + 1, y + 1))
+
         # if the king is black
         else:
             # if the king can move up
