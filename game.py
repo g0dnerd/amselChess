@@ -176,6 +176,19 @@ class Game:
         # Check if the move is legal
         if util.square_to_coordinates(end) not in legal_moves:
             return False
+        # If the move is en passant, check if the captured pawn moved two squares on the last move
+        if piece.type == 'pawn' and end[0] != start[0] and self.board.get_piece_by_square(end) is None:
+            print('En passant attempt')
+            print('Last move: ', self.move_history[self.full_move_number])
+            last_move = self.move_history[self.full_move_number]
+            last_move = (util.square_to_coordinates(last_move[0]), util.square_to_coordinates(last_move[1]))
+            end_move_coords = util.square_to_coordinates(end)
+            if self.current_player == 'white':
+                if last_move[1][1] != end_move_coords[1] + 1 or last_move[1][0] != end_move_coords[0]:
+                    return False
+            else:
+                if last_move[1][1] != end_move_coords[1] - 1 or last_move[1][0] != end_move_coords[0]:
+                    return False
         game_copy = copy.deepcopy(self)
         piece = game_copy.board.get_piece_by_square(start)
         game_copy.board.move_piece(start, end)
