@@ -23,3 +23,12 @@ def get_opponent_color(color):
         return 'black'
     else:
         return 'white'
+
+
+def export_pgn(game):
+    """Export a game to a PGN file"""
+    # Create a PGN file
+    pgn = open(f"./game.pgn", "w")
+    # Write the game to the PGN file
+    pgn.write(game.pgn)
+    pgn.close()

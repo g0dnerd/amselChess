@@ -17,9 +17,11 @@ class Game:
         self.full_move_number = 1
         self.white_king_pos = (4, 7)
         self.black_king_pos = (4, 0)
-        self.pgn = ''
+        self.pgn = '1. '
         self.white_attackers = []  # Initialize the list of possible attackers for the white king
         self.black_attackers = []  # Initialize the list of possible attackers for the black king
+        self.white_defenders = []  # Initialize the list of defenders for attacker on the black king
+        self.black_defenders = []  # Initialize the list of defenders for attacker on the white king
         self.castling_rights = {
             'white': {
                 'K': True,
@@ -69,6 +71,26 @@ class Game:
         self.update_attackers('white')
         self.update_attackers('black')
 
+        if captured_piece is not None or piece.type == 'pawn':
+            self.half_move_clock = 0
+        else:
+            self.half_move_clock += 1
+
+        # Update the full move number
+        if self.current_player == 'black':
+            self.full_move_number += 1
+
+        # Switch players
+        if self.current_player == 'white':
+            self.current_player = 'black'
+        else:
+            self.current_player = 'white'
+        # Check for game results
+
+        # Check for game results
+        if self.is_checkmate():
+            self.game_result = 'checkmate'
+
         # Update the PGN
         if self.current_player == 'white':
             self.pgn += str(self.full_move_number) + '. '
@@ -81,20 +103,13 @@ class Game:
         if captured_piece is not None:
             self.pgn += 'x'
         self.pgn += end
-        if self.is_in_check(util.get_opponent_color(self.current_player)):
-            self.pgn += '+'
-        if captured_piece is not None and captured_piece.type == 'king':
+        if self.is_checkmate():
             self.pgn += '#'
-        self.pgn += ' '
-
-        if captured_piece is not None or piece.type == 'pawn':
-            self.half_move_clock = 0
         else:
-            self.half_move_clock += 1
+            if self.is_in_check(util.get_opponent_color(self.current_player)):
+                self.pgn += '+'
 
-        # Update the full move number
-        if self.current_player == 'black':
-            self.full_move_number += 1
+        self.pgn += ' '
 
         # Update castling rights
         if piece.type == 'king':
@@ -112,31 +127,28 @@ class Game:
                 elif piece.position[0] == 7:
                     self.castling_rights['black']['K'] = False
 
-        # Switch players
-        if self.current_player == 'white':
-            self.current_player = 'black'
-        else:
-            self.current_player = 'white'
-        # Check for game results
-
-        # Check for game results
-        if self.is_checkmate():
-            self.game_result = 'checkmate'
         return True
 
     def update_attackers(self, color):
         # Update the list of possible attacker squares on the king of the given color
         king_pos = self.white_king_pos if color == 'white' else self.black_king_pos
         attackers = []
+        defenders = []
         all_piece_positions = self.board.get_all_piece_positions(util.get_opponent_color(color))
-        print("All piece positions: ", all_piece_positions)
         for piece_pos in all_piece_positions:
             if self.is_valid_move(piece_pos, util.coordinates_to_square(king_pos[0], king_pos[1])):
                 attackers.append(piece_pos)
+        for piece_pos in all_piece_positions:
+            for attacker in attackers:
+                piece = self.board.get_piece_by_square(piece_pos)
+                if util.square_to_coordinates(attacker) in piece.defending_pieces:
+                    defenders.append(piece_pos)
         if color == 'white':
             self.white_attackers = attackers
+            self.black_defenders = defenders
         else:
             self.black_attackers = attackers
+            self.white_defenders = defenders
 
     def get_current_player(self):
         return self.current_player
@@ -162,7 +174,6 @@ class Game:
             piece = self.board.get_piece_by_square(attacker)
             for move in piece.get_legal_moves(self.board):
                 if move == king_pos:
-                    print("The ", color, " king is in check by ", piece.type, " at ", attacker)
                     return True
         return False
 
@@ -178,8 +189,6 @@ class Game:
             return False
         # If the move is en passant, check if the captured pawn moved two squares on the last move
         if piece.type == 'pawn' and end[0] != start[0] and self.board.get_piece_by_square(end) is None:
-            print('En passant attempt')
-            print('Last move: ', self.move_history[self.full_move_number])
             last_move = self.move_history[self.full_move_number]
             last_move = (util.square_to_coordinates(last_move[0]), util.square_to_coordinates(last_move[1]))
             end_move_coords = util.square_to_coordinates(end)
@@ -188,6 +197,14 @@ class Game:
                     return False
             else:
                 if last_move[1][1] != end_move_coords[1] - 1 or last_move[1][0] != end_move_coords[0]:
+                    return False
+
+        # Check if the checking piece is defended
+        defenders = self.white_defenders if self.current_player == 'black' else self.black_defenders
+        for defender in defenders:
+            piece = self.board.get_piece_by_square(defender)
+            if util.square_to_coordinates(end) in piece.defending_pieces:
+                if self.board.get_piece_by_square(start).type == 'king':
                     return False
         game_copy = copy.deepcopy(self)
         piece = game_copy.board.get_piece_by_square(start)
@@ -202,11 +219,9 @@ class Game:
 
     def is_checkmate(self):
         if self.is_in_check(self.current_player):
-            print(self.current_player, " is in check")
             for square in self.board.get_all_piece_positions(self.current_player):
                 for move in self.get_legal_moves(square):
                     if self.is_valid_move(square, util.coordinates_to_square(move[0], move[1])):
                         return False
-            print(self.current_player, " is in checkmate")
             return True
         return False

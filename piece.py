@@ -12,6 +12,7 @@ class Piece:
         self.position = (x, y)
         self.square = util.coordinates_to_square(x, y)
         self.moved = False
+        self.defending_pieces = []
 
     def get_color(self):
         return self.color
@@ -93,11 +94,17 @@ class Pawn(Piece):
                 if board.get_piece_by_coordinates(x + 1, y - 1) is not None and \
                         board.get_piece_by_coordinates(x + 1, y - 1).color == 'black':
                     moves.append((x + 1, y - 1))
+                elif board.get_piece_by_coordinates(x + 1, y - 1) is not None and \
+                        board.get_piece_by_coordinates(x + 1, y - 1).color == 'white':
+                    self.defending_pieces.append((x + 1, y - 1))
             # if the pawn can capture a piece diagonally to the left
             if x - 1 >= 0 and y - 1 >= 0:
                 if board.get_piece_by_coordinates(x - 1, y - 1) is not None and \
                         board.get_piece_by_coordinates(x - 1, y - 1).color == 'black':
                     moves.append((x - 1, y - 1))
+                elif board.get_piece_by_coordinates(x - 1, y - 1) is not None and \
+                        board.get_piece_by_coordinates(x - 1, y - 1).color == 'white':
+                    self.defending_pieces.append((x - 1, y - 1))
             # if the pawn can capture a piece en passant to the right
             if x + 1 < 8 and y - 1 >= 0:
                 if board.get_piece_by_coordinates(x + 1, y) is not None and \
@@ -137,11 +144,17 @@ class Pawn(Piece):
                 if board.get_piece_by_coordinates(x + 1, y + 1) is not None and \
                         board.get_piece_by_coordinates(x + 1, y + 1).color == 'white':
                     moves.append((x + 1, y + 1))
+                elif board.get_piece_by_coordinates(x + 1, y + 1) is not None and \
+                        board.get_piece_by_coordinates(x + 1, y + 1).color == 'black':
+                    self.defending_pieces.append((x + 1, y + 1))
             # if the pawn can capture a piece diagonally to the left
             if x - 1 >= 0 and y + 1 < 8:
                 if board.get_piece_by_coordinates(x - 1, y + 1) is not None and \
                         board.get_piece_by_coordinates(x - 1, y + 1).color == 'white':
                     moves.append((x - 1, y + 1))
+                elif board.get_piece_by_coordinates(x - 1, y + 1) is not None and \
+                        board.get_piece_by_coordinates(x - 1, y + 1).color == 'black':
+                    self.defending_pieces.append((x - 1, y + 1))
             # if the pawn can capture a piece en passant to the right
             if x + 1 < 8 and y + 1 < 8:
                 if board.get_piece_by_coordinates(x + 1, y) is not None and \
@@ -189,41 +202,57 @@ class Knight(Piece):
                 if board.get_piece_by_coordinates(x + 1, y - 2) is None or \
                         board.get_piece_by_coordinates(x + 1, y - 2).color == 'black':
                     moves.append((x + 1, y - 2))
+                elif board.get_piece_by_coordinates(x + 1, y - 2).color == 'white':
+                    self.defending_pieces.append((x + 1, y - 2))
             # if the knight can move up and to the left
             if x - 1 >= 0 and y - 2 >= 0:
                 if board.get_piece_by_coordinates(x - 1, y - 2) is None or \
                         board.get_piece_by_coordinates(x - 1, y - 2).color == 'black':
                     moves.append((x - 1, y - 2))
+                elif board.get_piece_by_coordinates(x - 1, y - 2).color == 'white':
+                    self.defending_pieces.append((x - 1, y - 2))
             # if the knight can move down and to the right
             if x + 1 < 8 and y + 2 < 8:
                 if board.get_piece_by_coordinates(x + 1, y + 2) is None or \
                         board.get_piece_by_coordinates(x + 1, y + 2).color == 'black':
                     moves.append((x + 1, y + 2))
+                elif board.get_piece_by_coordinates(x + 1, y + 2).color == 'white':
+                    self.defending_pieces.append((x + 1, y + 2))
             # if the knight can move down and to the left
             if x - 1 >= 0 and y + 2 < 8:
                 if board.get_piece_by_coordinates(x - 1, y + 2) is None or \
                         board.get_piece_by_coordinates(x - 1, y + 2).color == 'black':
                     moves.append((x - 1, y + 2))
+                elif board.get_piece_by_coordinates(x - 1, y + 2).color == 'white':
+                    self.defending_pieces.append((x - 1, y + 2))
             # if the knight can move to the right and up
             if x + 2 < 8 and y - 1 >= 0:
                 if board.get_piece_by_coordinates(x + 2, y - 1) is None or \
                         board.get_piece_by_coordinates(x + 2, y - 1).color == 'black':
                     moves.append((x + 2, y - 1))
+                elif board.get_piece_by_coordinates(x + 2, y - 1).color == 'white':
+                    self.defending_pieces.append((x + 2, y - 1))
             # if the knight can move to the right and down
             if x + 2 < 8 and y + 1 < 8:
                 if board.get_piece_by_coordinates(x + 2, y + 1) is None or \
                         board.get_piece_by_coordinates(x + 2, y + 1).color == 'black':
                     moves.append((x + 2, y + 1))
+                elif board.get_piece_by_coordinates(x + 2, y + 1).color == 'white':
+                    self.defending_pieces.append((x + 2, y + 1))
             # if the knight can move to the left and up
             if x - 2 >= 0 and y - 1 >= 0:
                 if board.get_piece_by_coordinates(x - 2, y - 1) is None or \
                         board.get_piece_by_coordinates(x - 2, y - 1).color == 'black':
                     moves.append((x - 2, y - 1))
+                elif board.get_piece_by_coordinates(x - 2, y - 1).color == 'white':
+                    self.defending_pieces.append((x - 2, y - 1))
             # if the knight can move to the left and down
             if x - 2 >= 0 and y + 1 < 8:
                 if board.get_piece_by_coordinates(x - 2, y + 1) is None or \
                         board.get_piece_by_coordinates(x - 2, y + 1).color == 'black':
                     moves.append((x - 2, y + 1))
+                elif board.get_piece_by_coordinates(x - 2, y + 1).color == 'white':
+                    self.defending_pieces.append((x - 2, y + 1))
         # if the knight is black
         else:
             # if the knight can move up and to the right
@@ -231,41 +260,57 @@ class Knight(Piece):
                 if board.get_piece_by_coordinates(x + 1, y - 2) is None or \
                         board.get_piece_by_coordinates(x + 1, y - 2).color == 'white':
                     moves.append((x + 1, y - 2))
+                elif board.get_piece_by_coordinates(x + 1, y - 2).color == 'black':
+                    self.defending_pieces.append((x + 1, y - 2))
             # if the knight can move up and to the left
             if x - 1 >= 0 and y - 2 >= 0:
                 if board.get_piece_by_coordinates(x - 1, y - 2) is None or \
                         board.get_piece_by_coordinates(x - 1, y - 2).color == 'white':
                     moves.append((x - 1, y - 2))
+                elif board.get_piece_by_coordinates(x - 1, y - 2).color == 'black':
+                    self.defending_pieces.append((x - 1, y - 2))
             # if the knight can move down and to the right
             if x + 1 < 8 and y + 2 < 8:
                 if board.get_piece_by_coordinates(x + 1, y + 2) is None or \
                         board.get_piece_by_coordinates(x + 1, y + 2).color == 'white':
                     moves.append((x + 1, y + 2))
+                elif board.get_piece_by_coordinates(x + 1, y + 2).color == 'black':
+                    self.defending_pieces.append((x + 1, y + 2))
             # if the knight can move down and to the left
             if x - 1 >= 0 and y + 2 < 8:
                 if board.get_piece_by_coordinates(x - 1, y + 2) is None or \
                         board.get_piece_by_coordinates(x - 1, y + 2).color == 'white':
                     moves.append((x - 1, y + 2))
+                elif board.get_piece_by_coordinates(x - 1, y + 2).color == 'black':
+                    self.defending_pieces.append((x - 1, y + 2))
             # if the knight can move to the right and up
             if x + 2 < 8 and y - 1 >= 0:
                 if board.get_piece_by_coordinates(x + 2, y - 1) is None or \
                         board.get_piece_by_coordinates(x + 2, y - 1).color == 'white':
                     moves.append((x + 2, y - 1))
+                elif board.get_piece_by_coordinates(x + 2, y - 1).color == 'black':
+                    self.defending_pieces.append((x + 2, y - 1))
             # if the knight can move to the right and down
             if x + 2 < 8 and y + 1 < 8:
                 if board.get_piece_by_coordinates(x + 2, y + 1) is None or \
                         board.get_piece_by_coordinates(x + 2, y + 1).color == 'white':
                     moves.append((x + 2, y + 1))
+                elif board.get_piece_by_coordinates(x + 2, y + 1).color == 'black':
+                    self.defending_pieces.append((x + 2, y + 1))
             # if the knight can move to the left and up
             if x - 2 >= 0 and y - 1 >= 0:
                 if board.get_piece_by_coordinates(x - 2, y - 1) is None or \
                         board.get_piece_by_coordinates(x - 2, y - 1).color == 'white':
                     moves.append((x - 2, y - 1))
+                elif board.get_piece_by_coordinates(x - 2, y - 1).color == 'black':
+                    self.defending_pieces.append((x - 2, y - 1))
             # if the knight can move to the left and down
             if x - 2 >= 0 and y + 1 < 8:
                 if board.get_piece_by_coordinates(x - 2, y + 1) is None or \
                         board.get_piece_by_coordinates(x - 2, y + 1).color == 'white':
                     moves.append((x - 2, y + 1))
+                elif board.get_piece_by_coordinates(x - 2, y + 1).color == 'black':
+                    self.defending_pieces.append((x - 2, y + 1))
 
         return moves
 
@@ -301,6 +346,7 @@ class Bishop(Piece):
                         moves.append((x + i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y + i))
                         break
                 else:
                     break
@@ -313,6 +359,7 @@ class Bishop(Piece):
                         moves.append((x - i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y + i))
                         break
                 else:
                     break
@@ -325,6 +372,7 @@ class Bishop(Piece):
                         moves.append((x + i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y - i))
                         break
                 else:
                     break
@@ -337,6 +385,7 @@ class Bishop(Piece):
                         moves.append((x - i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y - i))
                         break
                 else:
                     break
@@ -351,6 +400,7 @@ class Bishop(Piece):
                         moves.append((x + i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y + i))
                         break
                 else:
                     break
@@ -363,6 +413,7 @@ class Bishop(Piece):
                         moves.append((x - i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y + i))
                         break
                 else:
                     break
@@ -375,6 +426,7 @@ class Bishop(Piece):
                         moves.append((x + i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y - i))
                         break
                 else:
                     break
@@ -387,22 +439,11 @@ class Bishop(Piece):
                         moves.append((x - i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y - i))
                         break
                 else:
                     break
 
-        # iterate through the list of legal moves and remove any moves that would put the king in check
-        # for move in moves:
-            # # copy the board
-            # new_board = copy.deepcopy(board)
-            # start = util.coordinates_to_square(self.position[0], self.position[1])
-            # end = util.coordinates_to_square(move[0], move[1])
-            # # move the bishop to the new position
-            # new_board.move_piece(start, end)
-            # # if the king is in check
-            # if new_board.is_in_check(color):
-                # # remove the move from the list of legal moves
-                # moves.remove(move)
         return moves
 
 
@@ -435,9 +476,10 @@ class Rook(Piece):
                         moves.append((x, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x, y - i))
                         break
                 else:
-                    break
+                    self.defending_pieces.append((x, y - i))
             # if the rook can move down
             for i in range(1, 8):
                 if y + i <= 7:
@@ -447,6 +489,7 @@ class Rook(Piece):
                         moves.append((x, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x, y + i))
                         break
                 else:
                     break
@@ -459,6 +502,7 @@ class Rook(Piece):
                         moves.append((x - i, y))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y))
                         break
                 else:
                     break
@@ -471,6 +515,7 @@ class Rook(Piece):
                         moves.append((x + i, y))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y))
                         break
                 else:
                     break
@@ -485,42 +530,46 @@ class Rook(Piece):
                         moves.append((x, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x, y - i))
                         break
                 else:
                     break
             # if the rook can move down
             for i in range(1, 8):
                 if y + i <= 7:
-                    if board.get_piece_by_coordinates(y + i, x) is None:
+                    if board.get_piece_by_coordinates(x, y + i) is None:
                         moves.append((x, y + i))
-                    elif board.get_piece_by_coordinates(y + i, x).color == 'white':
+                    elif board.get_piece_by_coordinates(x, y + i).color == 'white':
                         moves.append((x, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x, y + i))
                         break
                 else:
                     break
             # if the rook can move to the left
             for i in range(1, 8):
                 if x - i >= 0:
-                    if board.get_piece_by_coordinates(y, x - i) is None:
+                    if board.get_piece_by_coordinates(x - i, y) is None:
                         moves.append((x - i, y))
-                    elif board.get_piece_by_coordinates(y, x - i).color == 'white':
+                    elif board.get_piece_by_coordinates(x - i, y).color == 'white':
                         moves.append((x - i, y))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y))
                         break
                 else:
                     break
             # if the rook can move to the right
             for i in range(1, 8):
                 if x + i <= 7:
-                    if board.get_piece_by_coordinates(y, x + i) is None:
+                    if board.get_piece_by_coordinates(x + i, y) is None:
                         moves.append((x + i, y))
-                    elif board.get_piece_by_coordinates(y, x + i).color == 'white':
+                    elif board.get_piece_by_coordinates(x + i, y).color == 'white':
                         moves.append((x + i, y))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y))
                         break
                 else:
                     break
@@ -558,6 +607,7 @@ class Queen(Piece):
                         moves.append((x, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x, y - i))
                         break
                 else:
                     break
@@ -570,6 +620,7 @@ class Queen(Piece):
                         moves.append((x, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x, y + i))
                         break
                 else:
                     break
@@ -582,6 +633,7 @@ class Queen(Piece):
                         moves.append((x - i, y))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y))
                         break
                 else:
                     break
@@ -594,6 +646,7 @@ class Queen(Piece):
                         moves.append((x + i, y))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y))
                         break
                 else:
                     break
@@ -606,6 +659,7 @@ class Queen(Piece):
                         moves.append((x - i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y - i))
                         break
                 else:
                     break
@@ -618,6 +672,7 @@ class Queen(Piece):
                         moves.append((x + i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y - i))
                         break
                 else:
                     break
@@ -630,6 +685,7 @@ class Queen(Piece):
                         moves.append((x - i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y + i))
                         break
                 else:
                     break
@@ -642,6 +698,7 @@ class Queen(Piece):
                         moves.append((x + i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y + i))
                         break
                 else:
                     break
@@ -656,6 +713,7 @@ class Queen(Piece):
                         moves.append((x, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x, y - i))
                         break
                 else:
                     break
@@ -668,6 +726,7 @@ class Queen(Piece):
                         moves.append((x, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x, y + i))
                         break
                 else:
                     break
@@ -680,6 +739,7 @@ class Queen(Piece):
                         moves.append((x - i, y))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y))
                         break
                 else:
                     break
@@ -692,6 +752,7 @@ class Queen(Piece):
                         moves.append((x + i, y))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y))
                         break
                 else:
                     break
@@ -704,6 +765,7 @@ class Queen(Piece):
                         moves.append((x - i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y - i))
                         break
                 else:
                     break
@@ -716,6 +778,7 @@ class Queen(Piece):
                         moves.append((x + i, y - i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y - i))
                         break
                 else:
                     break
@@ -728,6 +791,7 @@ class Queen(Piece):
                         moves.append((x - i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x - i, y + i))
                         break
                 else:
                     break
@@ -740,6 +804,7 @@ class Queen(Piece):
                         moves.append((x + i, y + i))
                         break
                     else:
+                        self.defending_pieces.append((x + i, y + i))
                         break
                 else:
                     break
