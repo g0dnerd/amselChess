@@ -136,37 +136,8 @@ class PygameGUI:
         self.screen.blit(game_result_text, game_result_rect)
 
     def display_promotion_interface(self, position):
-        promotion_pieces = ["Queen", "Rook", "Bishop", "Knight"]
-
-        white = (255, 255, 255)
-        black = (0, 0, 0)
-        x = position[0]
-        y = position[1]
-
-        # Define interface width and height
-        width = 150
-        height = 120
-
-        # Define promotion pieces
-        promotion_pieces = ['Queen', 'Rook', 'Bishop', 'Knight']
-
-        # Define interface position
-        if x < self.SCREEN_WIDTH // 2:
-            position = (x + 100, y)
-        else:
-            position = (x - width - 100, y)
-
-        # Create surface for interface
-        interface = pygame.Surface((width, height), pygame.SRCALPHA)
-
-        # Draw interface background
-        pygame.draw.rect(interface, white, (0, 0, width, height), border_radius=10)
-
-        # Draw interface text
-        for i, piece in enumerate(promotion_pieces):
-            self.annotation_font.render_to(interface, (10, i*30+10), piece, black)
-
-        self.screen.blit(interface, position)
+        # TODO
+        pass
 
     def is_mouse_on_board(self, x, y):
         """Checks if the mouse is within the bounds of the board."""
@@ -218,7 +189,7 @@ class PygameGUI:
                             self.game.make_move(selected_piece.square, util.coordinates_to_square(x, y))
                             # if the move was a pawn promotion
                             if self.game.promotion:
-                                # self.display_promotion_interface((x, y))
+                                self.display_promotion_interface((x, y))
                                 continue
                         else:
                             print('Illegal move')
@@ -228,10 +199,6 @@ class PygameGUI:
                 self.update_board(self.game.board)
                 self.update_annotations(self.game)
                 self.draw_buttons()
-                # try:
-                #     self.display_promotion_interface((x, y))
-                # except UnboundLocalError:
-                #     continue
                 pygame.display.flip()
                 clock.tick(60)
 

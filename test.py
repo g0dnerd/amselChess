@@ -5,6 +5,7 @@
 import unittest
 from game import Game
 from gui import PygameGUI
+from amsel_engine import Engine
 import util
 
 
@@ -51,6 +52,12 @@ class TestChessEngine(unittest.TestCase):
         white_bishop = self.game.board.get_piece_by_coordinates(2, 0)
         # assert that the white bishop on c1 has no legal moves
         self.assertCountEqual(white_bishop.get_legal_moves(self.game.board), [])
+
+    def test_engine(self):
+        # Tests the engine
+        engine = Engine(self.game)
+        print(engine.get_legal_moves())
+        print(engine.evaluate_position())
 
     def test_gui(self):
         # Tests the GUI

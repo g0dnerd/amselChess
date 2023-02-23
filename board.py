@@ -59,6 +59,24 @@ class Board:
         square = util.coordinates_to_square(x, y)
         return self.get_piece_by_square(square)
 
+    def get_pieces_by_type(self, piece_type, color):
+        """Return a list of all pieces of the given type"""
+        pieces = []
+        for square in self.board:
+            piece = self.get_piece_by_square(square)
+            if piece and piece.type == piece_type and piece.color == color:
+                pieces.append(piece)
+        return pieces
+
+    def get_pieces_by_type_and_file(self, piece_type, color, file):
+        """Return a list of all pieces of the given type and file"""
+        pieces = []
+        for square in self.board:
+            piece = self.get_piece_by_square(square)
+            if piece and piece.type == piece_type and piece.color == color and piece.position[0] == file:
+                pieces.append(piece)
+        return pieces
+
     def set_piece(self, square, piece):
         """Set the piece at the given position"""
         self.board[square] = piece
@@ -74,7 +92,20 @@ class Board:
         self.set_piece(start, None)
         self.set_piece(end, piece)
         piece.move(end)
+        # if the move is a promotion
+        if piece.type == 'pawn':
+            if piece.color == 'white' and end[1] == '8':
+                self.promote_pawn(end, 'q', piece.color)
+            elif piece.color == 'black' and end[1] == '1':
+                self.promote_pawn(end, 'q', piece.color)
         return captured_piece
+
+    def promote_pawn(self, square, target_piece, color):
+        self.remove_piece(square)
+        x = util.square_to_coordinates(square)[0]
+        y = util.square_to_coordinates(square)[1]
+        if target_piece == 'q':
+            self.board[square] = Queen(color, x, y)
 
     def get_king_position(self, color):
         """Return the position of the given player's king"""

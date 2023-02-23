@@ -40,14 +40,6 @@ class Game:
         # Get the piece at the start position
         captured_piece = None
         piece = self.board.get_piece_by_square(start)
-        # legal_moves = piece.get_legal_moves(self.board)
-        # if piece is None or piece.color != self.current_player:
-        #     # If there is no piece at the start position or the piece is not the current player's color,
-        #     # the move is invalid.
-        #     return False
-        # if util.square_to_coordinates(end) not in legal_moves:
-        #     # If the end position is not in the list of legal moves for the piece, the move is invalid.
-        #     return False
 
         # Update the move history
         self.move_history.append((start, end))
@@ -75,11 +67,9 @@ class Game:
             if self.current_player == 'white':
                 if end[1] == '8':
                     self.promotion = True
-                    print("promotion flag set")
             else:
                 if end[1] == '1':
                     self.promotion = True
-                    print("promotion flag set")
 
         # If the move is a castling move
         if piece.type == 'king' and abs(ord(start[0])-ord(end[0])) == 2:
@@ -140,6 +130,8 @@ class Game:
             if captured_piece is not None:
                 self.pgn += 'x'
             self.pgn += end
+            if self.promotion:
+                self.pgn += '=Q'
             if self.is_checkmate():
                 self.pgn += '#'
             else:
@@ -206,6 +198,27 @@ class Game:
         if piece is None or piece.color != self.current_player:
             return []
         return piece.get_legal_moves(self.board)
+
+    def get_valid_moves(self):
+        """Return a list of all valid moves for the current player"""
+        valid_moves = []
+        for piece_pos in self.board.get_all_piece_positions(self.current_player):
+            piece = self.board.get_piece_by_square(piece_pos)
+            for move in piece.get_legal_moves(self.board):
+                move = util.coordinates_to_square(move[0], move[1])
+                if self.is_valid_move(piece.square, move):
+                    valid_moves.append((piece.square, move))
+        return valid_moves
+
+    def get_valid_moves_for_piece(self, square):
+        piece = self.board.get_piece_by_square(square)
+        valid_moves = []
+        for move in piece.get_legal_moves(self.board):
+            move = util.coordinates_to_square(move[0], move[1])
+            if self.is_valid_move(piece.square, move):
+                valid_moves.append(move)
+        return valid_moves
+
 
     def is_in_check(self, color):
         """Return True if the given color is in check, False otherwise"""
