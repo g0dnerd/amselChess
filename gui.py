@@ -68,7 +68,7 @@ class PygameGUI:
 
                 piece = self.game.board.get_piece_by_coordinates(i, j)
                 if piece is not None:
-                    piece_image = pygame.image.load(f'assets/{piece.color}_{piece.type}.png')
+                    piece_image = pygame.image.load(f'assets/pieces/{piece.color}_{piece.type}.png')
                     piece_image = pygame.transform.scale(piece_image, (self.cell_size, self.cell_size))
                     self.screen.blit(piece_image, (i * self.cell_size, j * self.cell_size))
 
