@@ -18,6 +18,7 @@ class Game:
         self.white_king_pos = (4, 7)
         self.black_king_pos = (4, 0)
         self.pgn = ''
+        self.promotion = False
         self.white_attackers = []  # Initialize the list of possible attackers for the white king
         self.black_attackers = []  # Initialize the list of possible attackers for the black king
         self.white_defenders = []  # Initialize the list of defenders for attacker on the black king
@@ -66,7 +67,19 @@ class Game:
 
         # Make the move
         self.board.move_piece(start, end)
+
         castling = False
+
+        # If the move was a pawn promotion
+        if piece.type == 'pawn':
+            if self.current_player == 'white':
+                if end[1] == '8':
+                    self.promotion = True
+                    print("promotion flag set")
+            else:
+                if end[1] == '1':
+                    self.promotion = True
+                    print("promotion flag set")
 
         # If the move is a castling move
         if piece.type == 'king' and abs(ord(start[0])-ord(end[0])) == 2:

@@ -86,7 +86,7 @@ class Pawn(Piece):
             # if the pawn has moved
             else:
                 # if the square in front of the pawn is empty
-                if board.get_piece_by_coordinates(x, y - 1) is None:
+                if y - 1 >= 0 and board.get_piece_by_coordinates(x, y - 1) is None:
                     # add the square in front of the pawn to the list of legal moves
                     moves.append((x, y - 1))
             # if the pawn can capture a piece diagonally to the right
@@ -136,7 +136,7 @@ class Pawn(Piece):
             # if the pawn has moved
             else:
                 # if the square in front of the pawn is empty
-                if board.get_piece_by_coordinates(x, y + 1) is None:
+                if y + 1 < 8 and board.get_piece_by_coordinates(x, y + 1) is None:
                     # add the square in front of the pawn to the list of legal moves
                     moves.append((x, y + 1))
             # if the pawn can capture a piece diagonally to the right

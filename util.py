@@ -32,3 +32,9 @@ def export_pgn(game):
     # Write the game to the PGN file
     pgn.write(game.pgn)
     pgn.close()
+
+
+def is_in_bounds(x, y):
+    if x > 7 or x < 0 or y > 7 or y < 0:
+        return False
+    return True
