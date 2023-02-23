@@ -88,16 +88,23 @@ class Game:
             self.game_result = 'checkmate'
 
         # Update the PGN
+        print("Updating PGN")
+        print("Piece was a", piece.type, "of color", piece.color)
+        print("Move was", start, "to", end)
+        print("Captured piece was", captured_piece)
+        print("Current player is", self.current_player)
         if self.current_player == 'black':
             self.pgn += str(self.full_move_number) + '. '
         if piece.type == 'pawn' and captured_piece is not None:
             self.pgn += start[0]
         elif piece.type == 'pawn' and captured_piece is None and end[0] != start[0]:
+            print("non-capture pawn move")
             self.pgn += start[0]
         elif piece.type != 'pawn':
             self.pgn += piece.letter.upper()
         if captured_piece is not None:
             self.pgn += 'x'
+        self.pgn += end
         if self.is_checkmate():
             self.pgn += '#'
         else:
