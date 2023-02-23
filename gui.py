@@ -9,13 +9,13 @@ import util
 class PygameGUI:
     def __init__(self, game):
         pygame.freetype.init()
-        self.light_square_color = (209, 139, 71)
-        self.dark_square_color = (255, 206, 158)
+        self.dark_square_color = (209, 139, 71)
+        self.light_square_color = (255, 206, 158)
         self.SCREEN_HEIGHT = 640
         self.BUTTON_COLOR = (100, 100, 100)
         self.BUTTON_TEXT_COLOR = (255, 255, 255)
         self.SCREEN_WIDTH = 1280
-        self.button_hover_color = self.light_square_color
+        self.button_hover_color = self.dark_square_color
         self.cell_size = 80
         self.game = game
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
@@ -77,13 +77,13 @@ class PygameGUI:
         util.export_pgn(self.game)
 
     def toggle_square_color(self):
-        if self.light_square_color == (209, 139, 71):
-            self.light_square_color = (118, 150, 86)
-            self.dark_square_color = (238, 238, 210)
+        if self.light_square_color == (255, 206, 158):
+            self.light_square_color = (238, 238, 210)
+            self.dark_square_color = (118, 150, 86)
         else:
-            self.light_square_color = (209, 139, 71)
-            self.dark_square_color = (255, 206, 158)
-        self.button_hover_color = self.light_square_color
+            self.light_square_color = (255, 206, 158)
+            self.dark_square_color = (209, 139, 71)
+        self.button_hover_color = self.dark_square_color
 
     def update_board(self, board):
         self.game.board = board

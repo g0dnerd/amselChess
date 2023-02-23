@@ -884,6 +884,24 @@ class King(Piece):
                 elif board.get_piece_by_coordinates(x + 1, y + 1).color == 'black':
                     moves.append((x + 1, y + 1))
 
+            if not self.moved:
+                # if the king can castle kingside
+                if board.get_piece_by_square('h1') is not None and \
+                        board.get_piece_by_square('h1').type == 'rook' and \
+                        not board.get_piece_by_square('h1').moved and \
+                        board.get_piece_by_square('h1').color == 'white' and \
+                        board.get_piece_by_square('f1') is None and \
+                        board.get_piece_by_square('g1') is None:
+                    moves.append((6, 7))
+                # if the king can castle queenside
+                if board.get_piece_by_square('a1') is not None and \
+                        board.get_piece_by_square('a1').type == 'rook' and \
+                        not board.get_piece_by_square('a1').moved and \
+                        board.get_piece_by_square('a1').color == 'white' and \
+                        board.get_piece_by_square('b1') is None and \
+                        board.get_piece_by_square('c1') is None:
+                    moves.append((1, 7))
+
         # if the king is black
         else:
             # if the king can move up
@@ -934,6 +952,23 @@ class King(Piece):
                     moves.append((x + 1, y + 1))
                 elif board.get_piece_by_coordinates(x + 1, y + 1).color == 'white':
                     moves.append((x + 1, y + 1))
+
+            if not self.moved:
+                # if the king can castle kingside
+                if board.get_piece_by_square('h8') is not None and \
+                        board.get_piece_by_square('h8').type == 'rook' and \
+                        not board.get_piece_by_square('h8').moved and \
+                        board.get_piece_by_square('h8').color == 'black' and \
+                        board.get_piece_by_square('f8') is None and \
+                        board.get_piece_by_square('g8') is None:
+                    moves.append((6, 0))
+                # if the king can castle queenside
+                if board.get_piece_by_square('a8') is not None and \
+                        board.get_piece_by_square('a8').type == 'rook' and \
+                        not board.get_piece_by_square('a8').moved and \
+                        board.get_piece_by_square('a8').color == 'black' and \
+                        board.get_piece_by_square('b8') is None and \
+                        board.get_piece_by_square('c8') is None:
+                    moves.append((1, 0))
+
         return moves
-
-

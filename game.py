@@ -39,14 +39,14 @@ class Game:
         # Get the piece at the start position
         captured_piece = None
         piece = self.board.get_piece_by_square(start)
-        legal_moves = piece.get_legal_moves(self.board)
-        if piece is None or piece.color != self.current_player:
-            # If there is no piece at the start position or the piece is not the current player's color,
-            # the move is invalid.
-            return False
-        if util.square_to_coordinates(end) not in legal_moves:
-            # If the end position is not in the list of legal moves for the piece, the move is invalid.
-            return False
+        # legal_moves = piece.get_legal_moves(self.board)
+        # if piece is None or piece.color != self.current_player:
+        #     # If there is no piece at the start position or the piece is not the current player's color,
+        #     # the move is invalid.
+        #     return False
+        # if util.square_to_coordinates(end) not in legal_moves:
+        #     # If the end position is not in the list of legal moves for the piece, the move is invalid.
+        #     return False
 
         # Update the move history
         self.move_history.append((start, end))
@@ -64,12 +64,29 @@ class Game:
             captured_piece = self.board.get_piece_by_square(captured_piece_square)
             self.board.remove_piece(captured_piece_square)
 
+        # Make the move
         self.board.move_piece(start, end)
+        castling = False
+
+        # If the move is a castling move
+        if piece.type == 'king' and abs(ord(start[0])-ord(end[0])) == 2:
+            castling = True
+            if start == 'e1':
+                if end == 'g1':
+                    self.board.move_piece('h1', 'f1')
+                else:
+                    self.board.move_piece('a1', 'd1')
+            else:
+                if end == 'g8':
+                    self.board.move_piece('h8', 'f8')
+                else:
+                    self.board.move_piece('a8', 'd8')
 
         self.white_king_pos = self.board.get_king_position('white')
         self.black_king_pos = self.board.get_king_position('black')
         self.update_attackers('white')
         self.update_attackers('black')
+        print('Current attackers on the white king:', self.white_attackers)
 
         if captured_piece is not None or piece.type == 'pawn':
             self.half_move_clock = 0
@@ -95,21 +112,26 @@ class Game:
         print("Current player is", self.current_player)
         if self.current_player == 'black':
             self.pgn += str(self.full_move_number) + '. '
-        if piece.type == 'pawn' and captured_piece is not None:
-            self.pgn += start[0]
-        elif piece.type == 'pawn' and captured_piece is None and end[0] != start[0]:
-            print("non-capture pawn move")
-            self.pgn += start[0]
-        elif piece.type != 'pawn':
-            self.pgn += piece.letter.upper()
-        if captured_piece is not None:
-            self.pgn += 'x'
-        self.pgn += end
-        if self.is_checkmate():
-            self.pgn += '#'
+        if castling:
+            if end[0] == 'g':
+                self.pgn += 'O-O'
+            else:
+                self.pgn += 'O-O-O'
         else:
-            if self.is_in_check(self.current_player):
-                self.pgn += '+'
+            if piece.type == 'pawn' and captured_piece is not None:
+                self.pgn += start[0]
+            elif piece.type == 'pawn' and captured_piece is None and end[0] != start[0]:
+                self.pgn += start[0]
+            elif piece.type != 'pawn':
+                self.pgn += piece.letter.upper()
+            if captured_piece is not None:
+                self.pgn += 'x'
+            self.pgn += end
+            if self.is_checkmate():
+                self.pgn += '#'
+            else:
+                if self.is_in_check(self.current_player):
+                    self.pgn += '+'
 
         self.pgn += ' '
 
@@ -204,7 +226,9 @@ class Game:
 
         # If the move is en passant, check if the captured pawn moved two squares on the last move
         if piece.type == 'pawn' and end[0] != start[0] and self.board.get_piece_by_square(end) is None:
-            last_move = self.move_history[self.full_move_number]
+            print("En passant move: ", start, end)
+            last_move = self.move_history[len(self.move_history) - 1]
+            print("Last move: ", last_move)
             last_move = (util.square_to_coordinates(last_move[0]), util.square_to_coordinates(last_move[1]))
             end_move_coords = util.square_to_coordinates(end)
             if self.current_player == 'white':
@@ -224,37 +248,110 @@ class Game:
 
         # Make the move on a copy of the board to avoid altering the actual board
         game_copy = copy.deepcopy(self)
-        piece = game_copy.board.get_piece_by_square(start)
-        game_copy.board.move_piece(start, end)
 
-        # Check if the move would put a king next to another king
-        if piece.type == 'king':
-            target_square = util.square_to_coordinates(end)
-            for i in range(2):
-                for j in range(2):
-                    adj_piece = game_copy.board.get_piece_by_coordinates(target_square[0] + i, target_square[1] + j)
-                    if adj_piece is not None:
-                        if adj_piece.type == 'king' and adj_piece.color != piece.color:
-                            return False
-                    adj_piece = game_copy.board.get_piece_by_coordinates(target_square[0] + i, target_square[1] - j)
-                    if adj_piece is not None:
-                        if adj_piece.type == 'king' and adj_piece.color != piece.color:
-                            return False
-                    adj_piece = game_copy.board.get_piece_by_coordinates(target_square[0] - i, target_square[1] + j)
-                    if adj_piece is not None:
-                        if adj_piece.type == 'king' and adj_piece.color != piece.color:
-                            return False
-                    adj_piece = game_copy.board.get_piece_by_coordinates(target_square[0] - i, target_square[1] - j)
-                    if adj_piece is not None:
-                        if adj_piece.type == 'king' and adj_piece.color != piece.color:
-                            return False
-            if piece.color == 'white':
-                game_copy.white_king_pos = util.square_to_coordinates(end)
+        # If the move is a castling move
+        if piece.type == 'king' and abs(ord(start[0])-ord(end[0])) == 2:
+            print("Checking legality of castling move:", start, "to", end)
+            # Can not castle while in check
+            if self.is_in_check(self.current_player):
+                return False
+
+            king_piece = game_copy.board.get_piece_by_square(start)
+            if king_piece.color == 'white':
+                if end == 'g1':
+                    rook_piece = game_copy.board.get_piece_by_square('h1')
+                else:
+                    rook_piece = game_copy.board.get_piece_by_square('a1')
             else:
-                game_copy.black_king_pos = util.square_to_coordinates(end)
+                if end == 'g8':
+                    rook_piece = game_copy.board.get_piece_by_square('h8')
+                else:
+                    rook_piece = game_copy.board.get_piece_by_square('a8')
 
-        # Check if the move would put the player in check
-        return not game_copy.is_in_check(piece.color)
+            print("Rook to move:", rook_piece.square)
+
+            if rook_piece.square[0] == 'h':
+                if rook_piece.square[1] == 1:
+                    game_copy.board.move_piece('e1', 'f1')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+                    game_copy.board.move_piece('f1', 'g1')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+                else:
+                    game_copy.board.move_piece('e8', 'f8')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+                    game_copy.board.move_piece('f8', 'g8')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+            else:
+                if rook_piece.square[1] == 1:
+                    game_copy.board.move_piece('e1', 'd1')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+                    game_copy.board.move_piece('d1', 'c1')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+                else:
+                    game_copy.board.move_piece('e8', 'd8')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+                    game_copy.board.move_piece('d8', 'c8')
+                    if game_copy.is_in_check(game_copy.current_player):
+                        return False
+
+            if game_copy.is_in_check(game_copy.current_player):
+                return False
+            return True
+        else:
+            piece = game_copy.board.get_piece_by_square(start)
+            game_copy.board.move_piece(start, end)
+
+            # Check if the move would put a king next to another king
+            if piece.type == 'king':
+                target_square = util.square_to_coordinates(end)
+                for i in range(2):
+                    for j in range(2):
+                        try:
+                            adj_piece = game_copy.board.get_piece_by_coordinates(
+                                target_square[0] + i, target_square[1] + j)
+                        except KeyError:
+                            continue
+                        if adj_piece is not None:
+                            if adj_piece.type == 'king' and adj_piece.color != piece.color:
+                                return False
+                        try:
+                            adj_piece = game_copy.board.get_piece_by_coordinates(
+                                target_square[0] + i, target_square[1] - j)
+                        except KeyError:
+                            continue
+                        if adj_piece is not None:
+                            if adj_piece.type == 'king' and adj_piece.color != piece.color:
+                                return False
+                        try:
+                            adj_piece = game_copy.board.get_piece_by_coordinates(
+                                target_square[0] - i, target_square[1] + j)
+                        except KeyError:
+                            continue
+                        if adj_piece is not None:
+                            if adj_piece.type == 'king' and adj_piece.color != piece.color:
+                                return False
+                        try:
+                            adj_piece = game_copy.board.get_piece_by_coordinates(
+                                target_square[0] - i, target_square[1] - j)
+                        except KeyError:
+                            continue
+                        if adj_piece is not None:
+                            if adj_piece.type == 'king' and adj_piece.color != piece.color:
+                                return False
+                if piece.color == 'white':
+                    game_copy.white_king_pos = util.square_to_coordinates(end)
+                else:
+                    game_copy.black_king_pos = util.square_to_coordinates(end)
+
+            # Check if the move would put the player in check
+            return not game_copy.is_in_check(piece.color)
 
     def is_checkmate(self):
         if self.is_in_check(self.current_player):
