@@ -205,6 +205,10 @@ class Engine:
         black_king_safety_score = self.get_king_safety_score(self.game.board, 'black')
         king_safety_score = white_king_safety_score - black_king_safety_score
 
+        print('Material score: {}'.format(material_score))
+        print('Mobility score: {}'.format(mobility_score))
+        print('King safety score: {}'.format(king_safety_score))
+        
         # positional_score = self.get_positional_score()
 
         total_score = material_score + mobility_score + pawn_score + king_safety_score + positional_score
@@ -227,17 +231,25 @@ class Engine:
         """Returns the mobility score of the board"""
         white_mobility_score = self.get_mobility_score_for_color(board, 'white')
         black_mobility_score = self.get_mobility_score_for_color(board, 'black')
+        print('White mobility score: {}'.format(white_mobility_score))
+        print('Black mobility score: {}'.format(black_mobility_score))
         mobility_score = white_mobility_score - black_mobility_score
         return mobility_score
 
     def get_mobility_score_for_color(self, board, color):
         """Returns the mobility score of the board for one player"""
+        switched = False
+        if color != self.game.current_player:
+            self.game.current_player = color
+            switched = True
         mobility_score = 0
         for square in board.board:
             piece = board.get_piece_by_square(square)
             if piece is not None and piece.color == color:
                 mobility_score += len(self.game.get_valid_moves_for_piece(piece.square))
         mobility_score *= self.MOBILITY_WEIGHT
+        if switched:
+            self.game.current_player = util.get_opponent_color(color)
         return mobility_score
 
     def get_king_safety_score(self, board, color):

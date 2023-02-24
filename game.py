@@ -89,7 +89,6 @@ class Game:
         self.black_king_pos = self.board.get_king_position('black')
         self.update_attackers('white')
         self.update_attackers('black')
-        print('Current attackers on the white king:', self.white_attackers)
 
         if captured_piece is not None or piece.type == 'pawn':
             self.half_move_clock = 0
@@ -108,11 +107,11 @@ class Game:
             self.game_result = 'checkmate'
 
         # Update the PGN
-        print("Updating PGN")
-        print("Piece was a", piece.type, "of color", piece.color)
-        print("Move was", start, "to", end)
-        print("Captured piece was", captured_piece)
-        print("Current player is", self.current_player)
+        # print("Updating PGN")
+        # print("Piece was a", piece.type, "of color", piece.color)
+        # print("Move was", start, "to", end)
+        # print("Captured piece was", captured_piece)
+        # print("Current player is", self.current_player)
         if self.current_player == 'black':
             self.pgn += str(self.full_move_number) + '. '
         if castling:
@@ -218,7 +217,6 @@ class Game:
             if self.is_valid_move(piece.square, move):
                 valid_moves.append(move)
         return valid_moves
-
 
     def is_in_check(self, color):
         """Return True if the given color is in check, False otherwise"""
