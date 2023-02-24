@@ -1,5 +1,6 @@
 import util
 
+
 def get_backward_pawns(board, color):
     """
         Returns a set of backward pawns for the given color.
@@ -10,7 +11,6 @@ def get_backward_pawns(board, color):
     pawns = board.get_pieces_by_type('pawn', color)
     for pawn in pawns:
         file = pawn.square[0]
-        rank = pawn.square[1]
         coords = pawn.position
         pawn_color = pawn.color
         is_isolated = file == 'a' or file == 'h' or not \
@@ -20,13 +20,13 @@ def get_backward_pawns(board, color):
         if is_isolated:
             continue
         if pawn_color == 'white':
-            for i in range(rank + 1, 8):
+            for i in range(coords[1] + 1, 9):
                 piece = board.get_piece_by_coordinates(file, i)
                 if piece and piece.type == 'pawn' and piece.color == 'white':
                     backward_pawns.add(pawn)
                     break
         else:
-            for i in range(rank - 1, 0, -1):
+            for i in range(coords[1] - 1, 0, -1):
                 piece = board.get_piece_by_coords(file, i)
                 if piece and piece.type == 'pawn' and piece.color == 'black':
                     backward_pawns.add(pawn)
@@ -198,11 +198,13 @@ class Engine:
 
     def evaluate_position(self):
         material_score = self.get_material_score()
-        mobility_score = self.get_mobility_score()
+        mobility_score = self.get_mobility_score(self.game.board)
         pawn_score = get_pawn_score(self.game.board, self.game.current_player)
-        king_safety_score = 0
         positional_score = 0
-        # king_safety_score = self.get_king_safety_score()
+        white_king_safety_score = self.get_king_safety_score(self.game.board, 'white')
+        black_king_safety_score = self.get_king_safety_score(self.game.board, 'black')
+        king_safety_score = white_king_safety_score - black_king_safety_score
+
         # positional_score = self.get_positional_score()
 
         total_score = material_score + mobility_score + pawn_score + king_safety_score + positional_score
@@ -221,15 +223,86 @@ class Engine:
                     material_balance -= piece.value
         return material_balance
 
-    def get_mobility_score(self):
+    def get_mobility_score(self, board):
         """Returns the mobility score of the board"""
+        white_mobility_score = self.get_mobility_score_for_color(board, 'white')
+        black_mobility_score = self.get_mobility_score_for_color(board, 'black')
+        mobility_score = white_mobility_score - black_mobility_score
+        return mobility_score
+
+    def get_mobility_score_for_color(self, board, color):
+        """Returns the mobility score of the board for one player"""
         mobility_score = 0
-        for square in self.game.board.board:
-            piece = self.game.board.get_piece_by_square(square)
-            if piece is not None:
-                if piece.color == 'white':
-                    mobility_score += len(self.game.get_valid_moves_for_piece(piece.square))
-                else:
-                    mobility_score -= len(self.game.get_valid_moves_for_piece(piece.square))
+        for square in board.board:
+            piece = board.get_piece_by_square(square)
+            if piece is not None and piece.color == color:
+                mobility_score += len(self.game.get_valid_moves_for_piece(piece.square))
         mobility_score *= self.MOBILITY_WEIGHT
         return mobility_score
+
+    def get_king_safety_score(self, board, color):
+        """
+        Evaluate king safety for a given color on the board.
+        :param board: The chess board to evaluate.
+        :param color: The color to evaluate king safety for.
+        :return: A float representing the king safety score for the given color.
+        """
+        king_position = board.get_pieces_by_type('king', color)[0].position
+        if king_position is None:
+            return 0.0
+
+        king_file, king_rank = king_position
+
+        # Check if the king is in the center, which is generally less safe
+        center_file, center_rank = 3, 3
+        if color == 'black':
+            center_rank = 4
+        center_distance = abs(king_file - center_file) + abs(king_rank - center_rank)
+        center_weight = 0.1
+        center_score = center_weight * center_distance if center_distance <= 2 else 0.0
+
+        # Check if the king is in the endgame, where it's generally safer to be more active
+        endgame_weight = 0.5
+        if board.is_endgame():
+            mobility_score = self.get_mobility_score_for_color(board, color)
+            return mobility_score * endgame_weight + center_score
+
+        # Check for nearby enemy pieces that can attack the king
+        attack_weight = 0.2
+        attack_distance = 2
+        nearby_attacks = 0
+        for file in range(max(0, king_file - attack_distance), min(8, king_file + attack_distance + 1)):
+            for rank in range(max(0, king_rank - attack_distance), min(8, king_rank + attack_distance + 1)):
+                piece = board.get_piece_by_coordinates(file, rank)
+                if piece is not None:
+                    legal_moves = piece.get_legal_moves(board)
+                if piece is not None and piece.color != color and piece.type != 'king':
+                    if king_position in legal_moves:
+                        nearby_attacks += 1
+        attack_score = attack_weight * nearby_attacks
+
+        # Check for pawn shield in front of the king
+        shield_weight = 0.15
+        if color == 'white':
+            shield_file, shield_rank = king_file, king_rank - 1
+            pawn_file1, pawn_file2 = king_file - 1, king_file + 1
+            pawn_rank = king_rank - 2
+        else:
+            shield_file, shield_rank = king_file, king_rank + 1
+            pawn_file1, pawn_file2 = king_file - 1, king_file + 1
+            pawn_rank = king_rank + 2
+        shield_score = 0.0
+        piece = board.get_piece_by_coordinates(shield_file, shield_rank)
+        if piece is not None and piece.type == 'pawn' and piece.color == color:
+            # Check for doubled pawns that would weaken the shield
+            doubled_pawns = get_doubled_pawns(board, color)
+            if (pawn_file1, pawn_rank) not in doubled_pawns and (pawn_file2, pawn_rank) not in doubled_pawns:
+                shield_score = shield_weight
+
+        # Calculate the overall king safety score as a weighted sum of the individual scores
+        overall_score = center_score + attack_score + shield_score
+
+        return overall_score
+
+
+

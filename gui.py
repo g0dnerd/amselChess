@@ -4,6 +4,7 @@
 import pygame
 import pygame.freetype
 import util
+import amsel_engine
 
 
 class PygameGUI:
@@ -18,6 +19,7 @@ class PygameGUI:
         self.button_hover_color = self.dark_square_color
         self.cell_size = 80
         self.game = game
+        self.engine = amsel_engine.Engine(game)
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.label_font = pygame.freetype.Font('./assets/fonts/Roboto-Bold.ttf', 16)
         self.annotation_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 16)
@@ -34,6 +36,12 @@ class PygameGUI:
                 'text': 'Export PGN',
                 'color': self.BUTTON_COLOR,
                 'function': self.export_pgn
+            },
+            'evaluate_position': {
+                'rect': pygame.Rect(self.SCREEN_WIDTH // 2 + 50 + 250, self.SCREEN_HEIGHT // 2 + 200, 200, 50),
+                'text': 'Evaluate Position',
+                'color': self.BUTTON_COLOR,
+                'function': self.evaluate_position
             }
         }
 
@@ -84,6 +92,11 @@ class PygameGUI:
             self.light_square_color = (255, 206, 158)
             self.dark_square_color = (209, 139, 71)
         self.button_hover_color = self.dark_square_color
+
+    def evaluate_position(self):
+        print(self.engine.evaluate_position())
+
+
 
     def update_board(self, board):
         self.game.board = board

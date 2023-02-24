@@ -54,6 +54,33 @@ class Board:
         """Return the piece at the given position"""
         return self.board[square]
 
+    def count_pieces(self):
+        """Count the number of pieces on the board"""
+        total_pieces = 0
+        for square in self.board:
+            if self.board[square]:
+                total_pieces += 1
+        return total_pieces
+
+    def is_endgame(self):
+        """Check if the current board state is in the endgame phase"""
+        total_pieces = self.count_pieces()
+
+        # If there are 6 or fewer pieces on the board, the game is in the endgame phase
+        if total_pieces <= 6:
+            return True
+
+        # If there are fewer than 3 pawns on the board, the game is in the endgame phase
+        if len(self.get_pieces_by_type('pawn', 'white')) + len(self.get_pieces_by_type('pawn', 'black')) < 3:
+            return True
+
+        # If there are no queens on the board, the game is in the endgame phase
+        if not self.get_pieces_by_type('queen', 'white') and not self.get_pieces_by_type('queen', 'black'):
+            return True
+
+        # Otherwise, the game is not in the endgame phase
+        return False
+
     def get_piece_by_coordinates(self, x, y):
         """Return the piece at the given position"""
         square = util.coordinates_to_square(x, y)
