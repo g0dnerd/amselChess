@@ -71,11 +71,13 @@ class Board:
             return True
 
         # If there are fewer than 3 pawns on the board, the game is in the endgame phase
-        if len(self.get_pieces_by_type('pawn', 'white')) + len(self.get_pieces_by_type('pawn', 'black')) < 3:
+        if len(self.get_pieces_by_type_and_color('pawn', 'white')) + len(
+                self.get_pieces_by_type_and_color('pawn', 'black')) < 3:
             return True
 
         # If there are no queens on the board, the game is in the endgame phase
-        if not self.get_pieces_by_type('queen', 'white') and not self.get_pieces_by_type('queen', 'black'):
+        if not self.get_pieces_by_type_and_color('queen', 'white') and not self.get_pieces_by_type_and_color('queen',
+                                                                                                             'black'):
             return True
 
         # Otherwise, the game is not in the endgame phase
@@ -86,7 +88,16 @@ class Board:
         square = util.coordinates_to_square(x, y)
         return self.get_piece_by_square(square)
 
-    def get_pieces_by_type(self, piece_type, color):
+    def get_pieces_by_type(self, piece_type):
+        """Return a list of all pieces of the given type"""
+        pieces = []
+        for square in self.board:
+            piece = self.get_piece_by_square(square)
+            if piece and piece.type == piece_type:
+                pieces.append(piece)
+        return pieces
+
+    def get_pieces_by_type_and_color(self, piece_type, color):
         """Return a list of all pieces of the given type"""
         pieces = []
         for square in self.board:
@@ -150,7 +161,7 @@ class Board:
                 pieces.append(piece)
         return pieces
 
-    def get_all_piece_positions(self, color):
+    def get_pieces_by_color(self, color):
         """Return a list of all the positions of the pieces of the given color"""
         positions = []
         for square in self.board:
@@ -167,3 +178,23 @@ class Board:
         for piece in self.get_all_pieces(player.color):
             moves.extend(piece.get_legal_moves(self))
         return moves
+
+    def get_fen(self):
+        """Return the FEN representation of the board"""
+        fen = ''
+        for y in range(8):
+            empty_squares = 0
+            for x in range(8):
+                piece = self.get_piece_by_coordinates(x, y)
+                if piece:
+                    if empty_squares:
+                        fen += str(empty_squares)
+                        empty_squares = 0
+                    fen += piece.letter
+                else:
+                    empty_squares += 1
+            if empty_squares:
+                fen += str(empty_squares)
+            if y != 7:
+                fen += '/'
+        return fen

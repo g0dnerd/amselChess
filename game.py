@@ -13,6 +13,7 @@ class Game:
         self.board = Board()
         self.current_player = 'white'
         self.move_history = []
+        self.fen_history = []
         self.half_move_clock = 0
         self.full_move_number = 1
         self.white_king_pos = (4, 7)
@@ -44,6 +45,9 @@ class Game:
         # Update the move history
         self.move_history.append((start, end))
 
+        # Update the FEN history
+        self.fen_history.append(self.board.get_fen())
+
         # Update the captured piece
         # If the moved piece is not a pawn:
         if piece.type != 'pawn':
@@ -72,7 +76,7 @@ class Game:
                     self.promotion = True
 
         # If the move is a castling move
-        if piece.type == 'king' and abs(ord(start[0])-ord(end[0])) == 2:
+        if piece.type == 'king' and abs(ord(start[0]) - ord(end[0])) == 2:
             castling = True
             if start == 'e1':
                 if end == 'g1':
@@ -100,11 +104,8 @@ class Game:
             self.current_player = 'black'
         else:
             self.current_player = 'white'
-        # Check for game results
 
-        # Check for game results
-        if self.is_checkmate():
-            self.game_result = 'checkmate'
+        self.update_game_result()
 
         # Update the PGN
         # print("Updating PGN")
@@ -166,7 +167,7 @@ class Game:
         king_pos = self.white_king_pos if color == 'white' else self.black_king_pos
         attackers = []
         defenders = []
-        all_piece_positions = self.board.get_all_piece_positions(util.get_opponent_color(color))
+        all_piece_positions = self.board.get_pieces_by_color(util.get_opponent_color(color))
         for piece_pos in all_piece_positions:
             if self.is_valid_move(piece_pos, util.coordinates_to_square(king_pos[0], king_pos[1])):
                 attackers.append(piece_pos)
@@ -201,7 +202,7 @@ class Game:
     def get_valid_moves(self):
         """Return a list of all valid moves for the current player"""
         valid_moves = []
-        for piece_pos in self.board.get_all_piece_positions(self.current_player):
+        for piece_pos in self.board.get_pieces_by_color(self.current_player):
             piece = self.board.get_piece_by_square(piece_pos)
             for move in piece.get_legal_moves(self.board):
                 move = util.coordinates_to_square(move[0], move[1])
@@ -227,7 +228,7 @@ class Game:
             for move in piece.get_legal_moves(self.board):
                 if move == king_pos:
                     return True
-        pieces = self.board.get_all_piece_positions(util.get_opponent_color(color))
+        pieces = self.board.get_pieces_by_color(util.get_opponent_color(color))
         for piece in pieces:
             piece = self.board.get_piece_by_square(piece)
             legal_moves = piece.get_legal_moves(self.board)
@@ -250,9 +251,9 @@ class Game:
 
         # If the move is en passant, check if the captured pawn moved two squares on the last move
         if piece.type == 'pawn' and end[0] != start[0] and self.board.get_piece_by_square(end) is None:
-            print("En passant move: ", start, end)
+            # print("En passant move: ", start, end)
             last_move = self.move_history[len(self.move_history) - 1]
-            print("Last move: ", last_move)
+            # print("Last move: ", last_move)
             last_move = (util.square_to_coordinates(last_move[0]), util.square_to_coordinates(last_move[1]))
             end_move_coords = util.square_to_coordinates(end)
             if self.current_player == 'white':
@@ -274,8 +275,8 @@ class Game:
         game_copy = copy.deepcopy(self)
 
         # If the move is a castling move
-        if piece.type == 'king' and abs(ord(start[0])-ord(end[0])) == 2:
-            print("Checking legality of castling move:", start, "to", end)
+        if piece.type == 'king' and abs(ord(start[0]) - ord(end[0])) == 2:
+            # print("Checking legality of castling move:", start, "to", end)
             # Can not castle while in check
             if self.is_in_check(self.current_player):
                 return False
@@ -292,7 +293,7 @@ class Game:
                 else:
                     rook_piece = game_copy.board.get_piece_by_square('a8')
 
-            print("Rook to move:", rook_piece.square)
+            # print("Rook to move:", rook_piece.square)
 
             if rook_piece.square[0] == 'h':
                 if rook_piece.square[1] == 1:
@@ -379,9 +380,84 @@ class Game:
 
     def is_checkmate(self):
         if self.is_in_check(self.current_player):
-            for square in self.board.get_all_piece_positions(self.current_player):
+            for square in self.board.get_pieces_by_color(self.current_player):
                 for move in self.get_legal_moves(square):
                     if self.is_valid_move(square, util.coordinates_to_square(move[0], move[1])):
                         return False
+            self.game_result = 'checkmate'
             return True
         return False
+
+    def is_stalemate(self):
+        if not self.is_in_check(self.current_player):
+            for square in self.board.get_pieces_by_color(self.current_player):
+                piece = self.board.get_piece_by_square(square)
+                for move in piece.get_legal_moves(self.board):
+                    if self.is_valid_move(square, util.coordinates_to_square(move[0], move[1])):
+                        return False
+            self.game_result = 'stalemate'
+            return True
+        return False
+
+    def is_insufficient_material(self):
+        """Returns True if the game is a draw due to insufficient material, False otherwise"""
+        # Check if there are any pawns, rooks, or queens
+        if self.board.get_pieces_by_type('pawn') == [] and \
+                self.board.get_pieces_by_type('rook') == [] and \
+                self.board.get_pieces_by_type('queen') == []:
+            # Check if there are any knights or bishops
+            if self.board.get_pieces_by_type_and_color('knight', 'white') == [] and \
+                    self.board.get_pieces_by_type_and_color('knight', 'black') == [] and \
+                    self.board.get_pieces_by_type_and_color('bishop', 'white') == [] and \
+                    self.board.get_pieces_by_type_and_color('bishop', 'black') == []:
+                self.game_result = 'draw'
+                print('Draw due to insufficient material')
+                return True
+            # Check if there is only one knight or bishop
+            elif len(self.board.get_pieces_by_type('knight')) == 1 and self.board.get_pieces_by_type('bishop') == []:
+                self.game_result = 'draw'
+                print('Draw due to insufficient material')
+                return True
+            # Check if there are two bishops of different colors
+            elif len(self.board.get_pieces_by_type('bishop')) == 1 and self.board.get_pieces_by_type('knight') == []:
+                self.game_result = 'draw'
+                print('Draw due to insufficient material')
+                return True
+            elif len(self.board.get_pieces_by_type('bishop')) == 2:
+                bishop1 = self.board.get_piece_by_square(self.board.get_pieces_by_type('bishop')[0])
+                bishop2 = self.board.get_piece_by_square(self.board.get_pieces_by_type('bishop')[1])
+                if (bishop1.color == 'white' and bishop2.color == 'black') or \
+                        (bishop1.color == 'black' and bishop2.color == 'white'):
+                    self.game_result = 'draw'
+                    print('Draw due to insufficient material')
+                    return True
+        return False
+
+    def is_threefold_repetition(self):
+        """Returns True if the game is a draw due to threefold repetition, False otherwise"""
+        threefold = self.fen_history.count(self.board.get_fen()) >= 3
+        if threefold:
+            print('Threefold repetition')
+            self.game_result = 'draw'
+        return threefold
+
+    def is_fifty_move_rule(self):
+        """Returns True if the game is a draw due to the fifty move rule, False otherwise"""
+        fifty_moves = self.half_move_clock >= 50
+        if fifty_moves:
+            print('Fifty move rule')
+            self.game_result = 'draw'
+        return fifty_moves
+
+    def is_game_over(self):
+        """Returns True if the game is over, False otherwise"""
+        if self.game_result is not None:
+            return True
+
+    def update_game_result(self):
+        """Updates the game result if the game is over"""
+        self.is_stalemate()
+        self.is_fifty_move_rule()
+        self.is_checkmate()
+        self.is_threefold_repetition()
+        self.is_insufficient_material()

@@ -6,12 +6,14 @@ import unittest
 from game import Game
 from gui import PygameGUI
 from amsel_engine import Engine
+from mcts import Tree
 import util
 
 
 class TestChessEngine(unittest.TestCase):
     def setUp(self):
         self.game = Game()
+        self.tree = Tree(self.game)
 
     def test_util_translations(self):
         # Test the translations in util.py
@@ -56,8 +58,8 @@ class TestChessEngine(unittest.TestCase):
     def test_engine(self):
         # Tests the engine
         engine = Engine(self.game)
-        print(engine.get_legal_moves())
-        print(engine.evaluate_position())
+        # print(engine.get_legal_moves())
+        print(engine.evaluate_position(self.game))
 
     def test_gui(self):
         # Tests the GUI

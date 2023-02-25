@@ -4,6 +4,7 @@
 import pygame
 import pygame.freetype
 import util
+from mcts import Tree
 import amsel_engine
 
 
@@ -42,7 +43,13 @@ class PygameGUI:
                 'text': 'Evaluate Position',
                 'color': self.BUTTON_COLOR,
                 'function': self.evaluate_position
-            }
+            },
+            'make_best_move': {
+                'rect': pygame.Rect(self.SCREEN_WIDTH // 2 + 50 + 250, self.SCREEN_HEIGHT // 2 + 100, 200, 50),
+                'text': 'Make Best Move',
+                'color': self.BUTTON_COLOR,
+                'function': self.make_engine_move
+            },
         }
 
     def draw_board(self):
@@ -84,6 +91,12 @@ class PygameGUI:
         """Exports the game's PGN to a file."""
         util.export_pgn(self.game)
 
+    def make_engine_move(self):
+        """Makes the engine's best move."""
+        tree = Tree(self.game)
+        engine_move = tree.find_best_move()
+        self.game.make_move(engine_move[0], engine_move[1])
+
     def toggle_square_color(self):
         if self.light_square_color == (255, 206, 158):
             self.light_square_color = (238, 238, 210)
@@ -94,9 +107,7 @@ class PygameGUI:
         self.button_hover_color = self.dark_square_color
 
     def evaluate_position(self):
-        print(self.engine.evaluate_position())
-
-
+        print(self.engine.evaluate_position(self.game))
 
     def update_board(self, board):
         self.game.board = board
@@ -115,7 +126,7 @@ class PygameGUI:
                 text_rect = text.get_rect(center=button['rect'].center)
                 self.screen.blit(text, text_rect)
 
-    def update_annotations(self, game):
+    def update_annotations(self):
         """Updates the annotations in the right half of the screen.
         Annotations include the current player, the move history and the game result."""
         # print('Updating annotations')
@@ -138,7 +149,8 @@ class PygameGUI:
             else:
                 game_result = 'white wins!'
         game_result_text, _ = self.annotation_font.render(f'Game Result: {game_result}', (255, 255, 255))
-        game_result_rect = game_result_text.get_rect(midleft=(self.SCREEN_WIDTH // 2 + 50, self.SCREEN_HEIGHT // 2 + 50))
+        game_result_rect = game_result_text.get_rect(
+            midleft=(self.SCREEN_WIDTH // 2 + 50, self.SCREEN_HEIGHT // 2 + 50))
 
         # draw background color over the right half of the screen
         pygame.draw.rect(self.screen, (67, 69, 74), (
@@ -210,7 +222,7 @@ class PygameGUI:
                         dragging = False
 
                 self.update_board(self.game.board)
-                self.update_annotations(self.game)
+                self.update_annotations()
                 self.draw_buttons()
                 pygame.display.flip()
                 clock.tick(60)
