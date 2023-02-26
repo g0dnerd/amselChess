@@ -1,138 +1,137 @@
-import amsel_engine
-import math
-import numpy as np
 import random
+import math
 import copy
+import sys
 
-
-def backpropagation(node, score):
-    # Update the scores of all nodes in the path from the given node to the root
-    while node is not None:
-        # print("Backpropagating for node of type", type(node))
-        node.score += score
-        node.visits += 1
-        node = node.parent
-
-
-def expansion(node, game):
-    # Expand the node by generating all possible moves and creating a new child node for each one.
-    legal_moves = game.get_valid_moves()
-    for move in legal_moves:
-        new_game = copy.deepcopy(game)
-        new_game.make_move(move[0], move[1])
-        # print("Creating new node after move", move[0], "to", move[1], "with current player", new_game.current_player)
-        new_node = Node(node, move, new_game)
-        node.children.append(new_node)
+import amsel_engine
 
 
 class Node:
-    def __init__(self, parent=None, move=None, game=None):
-        self.game = game
-        self.move = move
-        self.engine = amsel_engine.Engine(self.game)
+    def __init__(self, state, parent=None):
+        self.state = state
         self.parent = parent
         self.children = []
-        self.visits = 0
-        self.score = 0.0
+        self.num_visits = 0
+        self.total_score = 0
+        self.move = None
 
-    def add_child(self, child_game):
-        child_node = Node(self, None, child_game)
+    def is_fully_expanded(self):
+        return len(self.children) == len(self.state.get_valid_moves())
+
+    def add_child(self, child_state):
+        child_node = Node(child_state, self)
         self.children.append(child_node)
         return child_node
 
+    def select_child(self):
+        unexplored_children = [c for c in self.children if c.num_visits == 0]
+        if unexplored_children:
+            return random.choice(unexplored_children)
+        else:
+            return max(self.children, key=lambda c: c.total_score / c.num_visits + 1.4 * (
+                    2 * math.log(self.num_visits) / c.num_visits) ** 0.5)
+
     def update(self, score):
-        self.visits += 1
-        self.score += score
+        self.num_visits += 1
+        self.total_score += score
 
-    def fully_expanded(self):
-        return len(self.children) == len(self.engine.get_legal_moves())
 
-    def best_child(self, exploration_value):
-        choices_weights = [(c.score / c.visits) +
-                           exploration_value * math.sqrt((2 * math.log(self.visits) / c.visits))
-                           for c in self.children]
-        return self.children[np.argmax(choices_weights)]
+def expand(node):
+    valid_moves = node.state.get_valid_moves()
+    for move in valid_moves:
+        new_state = copy.deepcopy(node.state)
+        new_state.make_move(move[0], move[1])
+        child_node = Node(new_state, node)
+        child_node.move = move
+        node.children.append(child_node)
 
-    def select_child(self, exploration_value):
-        # Check that all children are expanded.
-        assert all(node.fully_expanded() for node in self.children)
 
-        # Use the UCB1 formula to select a child node.
-        log_total = math.log(self.visits)
-
-        def ucb1(node):
-            return node.score / node.visits + exploration_value * math.sqrt(log_total / node.visits)
-
-        return max(self.children, key=ucb1)
+def backpropagation(node, score):
+    while node is not None:
+        node.update(abs(score))
+        node = node.parent
 
 
 class Tree:
-    def __init__(self, game, max_depth=25):
-        self.game = game
-        self.root = Node(None, None, self.game)
-        self.MAX_DEPTH = max_depth
-        self.num_simulations = 100
-        self.engine = amsel_engine.Engine(game)
+    MAX_DEPTH = 12
+    MAX_SIMULATIONS = 25
 
-        expansion(self.root, self.game)
+    def __init__(self, state):
+        self.num_simulations = 0
+        self.root = Node(state)
+        self.engine = amsel_engine.Engine()
 
-    def selection(self, node):
-        # Find the child node with the highest UCB1 score.
-        # print("Got passed a node with ", len(node.children), " children.")
+    def select(self, node):
+        print('Selecting node')
         max_ucb = float('-inf')
         selected_child = None
         for child in node.children:
-            if child.visits == 0:
-                # If a child hasn't been explored yet, select it
+            if child.num_visits == 0:
                 return child
             else:
-                # Calculate the UCB1 score for the child node.
-                ucb = child.score / child.visits + math.sqrt(
-                    2 * math.log(node.visits) / child.visits)
+                ucb = child.total_score / child.num_visits + math.sqrt(
+                    math.log(self.MAX_SIMULATIONS) / child.num_visits)
                 if ucb > max_ucb:
                     max_ucb = ucb
                     selected_child = child
-        return self.selection(selected_child)
+        return self.select(selected_child)
 
     def simulation(self, node):
-        # Select a random unexplored child node and evaluate its position.
-        while node.children:
-            unexplored_children = [child for child in node.children if child.visits == 0]
-            if unexplored_children:
-                child = random.choice(unexplored_children)
-                return self.evaluate(child.game)
+        print('')
+        state = copy.deepcopy(node.state)
+        depth = 0
+        while not state.is_game_over() and depth < self.MAX_DEPTH:
+            printout = 'Running random simulation at depth ' + str(depth + 1)
+            print(printout, end='\r')
+            sys.stdout.flush()
+            move = random.choice(state.get_valid_moves())
+            state.make_move(move[0], move[1])
+            depth += 1
+        if state.is_game_over():
+            if state.is_checkmate():
+                if state.game_result == '1-0':
+                    return 1
+                else:
+                    return 0
             else:
-                # Select a child node using the UCB1 formula.
-                node = self.selection(node)
-
-                if node.depth == self.MAX_DEPTH:
-                    return self.evaluate(node.game)
-
-        # If all child nodes have been explored, simulate a random game
-        return self.evaluate(node.game)
-
-    def evaluate(self, game):
-        # Evaluate the position using the evaluate_position method of the engine
-        score = self.engine.evaluate_position(game)
-        # Scale the score to be between -1 and 1
-        return score / 100.0
+                # print('returning 0.5')
+                return 0.5
+        evaluation = self.engine.evaluate_position(state)/100
+        # print('returning', evaluation)
+        return evaluation
 
     def find_best_move(self):
-        for i in range(self.num_simulations):
-            print("Running simulation", i)
-            # Select a node to explore
-            node = self.selection(self.root)
-            # Expand the node
-            expansion(node, node.game)
-            reward = self.simulation(node)
-            backpropagation(node, reward)
+        for _ in range(self.MAX_SIMULATIONS):
+            print('Simulation number:', _+1, 'of', self.MAX_SIMULATIONS)
+            node = self.root
+            state = copy.deepcopy(node.state)
+            depth = 0
 
-        # Select the best child of the root node
-        best_node = self.root.children[0]
-        for child in self.root.children[1:]:
-            if child.visits > best_node.visits:
+            while not node.is_fully_expanded() and node.children:
+                node = node.select_child()
+                state.make_move(node.move[0], node.move[1])
+                depth += 1
+                print('Depth:', depth, 'Move:', node.move)
+
+            if not node.is_fully_expanded():
+                expand(node)
+                score = self.simulation(node)
+            else:
+                score = self.simulation(node)
+
+            while node is not None:
+                backpropagation(node, score)
+                node = node.parent
+
+            # self.num_simulations += 1
+
+        max_visits = float('-inf')
+        best_node = None
+        for child in self.root.children:
+            if child.num_visits > max_visits:
+                max_visits = child.num_visits
                 best_node = child
 
-        print("Best move is", best_node.move, "with score", best_node.score, "and visits", best_node.visits)
         return best_node.move
+
 

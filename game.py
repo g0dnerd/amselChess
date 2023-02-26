@@ -41,6 +41,10 @@ class Game:
         # Get the piece at the start position
         captured_piece = None
         piece = self.board.get_piece_by_square(start)
+        if piece is None:
+            print('No piece at start position, was given move: ' + start + end)
+            print('In board state', self.board)
+            print('With move history', self.move_history)
 
         # Update the move history
         self.move_history.append((start, end))
@@ -276,10 +280,49 @@ class Game:
 
         # If the move is a castling move
         if piece.type == 'king' and abs(ord(start[0]) - ord(end[0])) == 2:
+            if self.current_player == 'white':
+                if self.board.get_piece_by_square('e1') is None:
+                    return False
+            else:
+                if self.board.get_piece_by_square('e8') is None:
+                    return False
+
             # print("Checking legality of castling move:", start, "to", end)
             # Can not castle while in check
             if self.is_in_check(self.current_player):
                 return False
+
+            # Can not castle if the king or rook has moved
+            if self.current_player == 'white':
+                if end == 'g1':
+                    if self.board.get_piece_by_square('h1').type != 'rook' and \
+                            self.board.get_piece_by_square('h1').color != 'white':
+                        return False
+                    else:
+                        if not self.castling_rights['white']['K']:
+                            return False
+                else:
+                    if self.board.get_piece_by_square('a1').type != 'rook' and \
+                            self.board.get_piece_by_square('a1').color != 'white':
+                        return False
+                    else:
+                        if not self.castling_rights['white']['Q']:
+                            return False
+            else:
+                if end == 'g8':
+                    if self.board.get_piece_by_square('h8').type != 'rook' and \
+                            self.board.get_piece_by_square('h8').color != 'black':
+                        return False
+                    else:
+                        if not self.castling_rights['black']['K']:
+                            return False
+                else:
+                    if self.board.get_piece_by_square('a8').type != 'rook' and \
+                            self.board.get_piece_by_square('a8').color != 'black':
+                        return False
+                    else:
+                        if not self.castling_rights['black']['Q']:
+                            return False
 
             king_piece = game_copy.board.get_piece_by_square(start)
             if king_piece.color == 'white':
@@ -384,7 +427,10 @@ class Game:
                 for move in self.get_legal_moves(square):
                     if self.is_valid_move(square, util.coordinates_to_square(move[0], move[1])):
                         return False
-            self.game_result = 'checkmate'
+            if self.current_player == 'white':
+                self.game_result = '1-0'
+            else:
+                self.game_result = '0-1'
             return True
         return False
 
@@ -461,3 +507,15 @@ class Game:
         self.is_checkmate()
         self.is_threefold_repetition()
         self.is_insufficient_material()
+
+    def get_last_move(self):
+        """Returns the last move in the game"""
+        return self.move_history[-1]
+
+    def get_first_move(self):
+        """Returns the first move in the game"""
+        return self.move_history[0]
+
+    def get_move_by_number(self, move_number):
+        """Returns the move at the given move number"""
+        return self.move_history[move_number]

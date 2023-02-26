@@ -20,7 +20,7 @@ class PygameGUI:
         self.button_hover_color = self.dark_square_color
         self.cell_size = 80
         self.game = game
-        self.engine = amsel_engine.Engine(game)
+        self.engine = amsel_engine.Engine()
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.label_font = pygame.freetype.Font('./assets/fonts/Roboto-Bold.ttf', 16)
         self.annotation_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 16)
@@ -94,8 +94,8 @@ class PygameGUI:
     def make_engine_move(self):
         """Makes the engine's best move."""
         tree = Tree(self.game)
-        engine_move = tree.find_best_move()
-        self.game.make_move(engine_move[0], engine_move[1])
+        move = tree.find_best_move()
+        self.game.make_move(move[0], move[1])
 
     def toggle_square_color(self):
         if self.light_square_color == (255, 206, 158):

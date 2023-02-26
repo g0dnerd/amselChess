@@ -6,14 +6,12 @@ import unittest
 from game import Game
 from gui import PygameGUI
 from amsel_engine import Engine
-from mcts import Tree
 import util
 
 
 class TestChessEngine(unittest.TestCase):
     def setUp(self):
         self.game = Game()
-        self.tree = Tree(self.game)
 
     def test_util_translations(self):
         # Test the translations in util.py
@@ -55,9 +53,13 @@ class TestChessEngine(unittest.TestCase):
         # assert that the white bishop on c1 has no legal moves
         self.assertCountEqual(white_bishop.get_legal_moves(self.game.board), [])
 
+    def test_get_valid_moves(self):
+        # Tests the get_valid_moves method
+        print(self.game.get_valid_moves())
+
     def test_engine(self):
         # Tests the engine
-        engine = Engine(self.game)
+        engine = Engine()
         # print(engine.get_legal_moves())
         print(engine.evaluate_position(self.game))
 

@@ -20,14 +20,14 @@ def get_backward_pawns(game, color):
         if is_isolated:
             continue
         if pawn_color == 'white':
-            for i in range(coords[1] + 1, 9):
+            for i in range(coords[1], 8):
                 piece = game.board.get_piece_by_coordinates(coords[0], i)
                 if piece and piece.type == 'pawn' and piece.color == 'white':
                     backward_pawns.add(pawn)
                     break
         else:
             for i in range(coords[1] - 1, 0, -1):
-                print("Trying to get piece by coordinates", coords[0], i)
+                # print("Trying to get piece by coordinates", coords[0], i)
                 piece = game.board.get_piece_by_coordinates(coords[0], i)
                 if piece and piece.type == 'pawn' and piece.color == 'black':
                     backward_pawns.add(pawn)
@@ -185,13 +185,25 @@ def get_pawn_score(game, color):
         if pawn.position in passed_pawns:
             pawn_score += 0.25
 
-    print('Pawn score: {}'.format(pawn_score))
+    # print('Pawn score for', color, ':', pawn_score)
     return pawn_score
 
 
+def get_material_score(game):
+    """Returns the material balance of the board"""
+    material_balance = 0
+    for square in game.board.board:
+        piece = game.board.get_piece_by_square(square)
+        if piece is not None:
+            if piece.color == 'white':
+                material_balance += piece.value
+            else:
+                material_balance -= piece.value
+    return material_balance * 10
+
+
 class Engine:
-    def __init__(self, game):
-        self.game = game
+    def __init__(self):
         # Define constants
         self.MOBILITY_WEIGHT = 0.1
         # Values for each piece type depending on the position on the board
@@ -265,12 +277,9 @@ class Engine:
         self.WEAK_PAWN_PENALTY = 10
         self.PAWN_CHAIN_BONUS = 10
 
-    def get_legal_moves(self):
-        return self.game.get_valid_moves()
-
     def evaluate_position(self, game):
-        print('Evaluating position...')
-        material_score = self.get_material_score(game)
+        # print('Evaluating position...')
+        material_score = get_material_score(game)
         mobility_score = self.get_mobility_score(game)
         white_pawn_score = get_pawn_score(game, game.current_player)
         black_pawn_score = get_pawn_score(game, util.get_opponent_color(game.current_player))
@@ -296,24 +305,12 @@ class Engine:
 
         return total_score
 
-    def get_material_score(self, game):
-        """Returns the material balance of the board"""
-        material_balance = 0
-        for square in game.board.board:
-            piece = game.board.get_piece_by_square(square)
-            if piece is not None:
-                if piece.color == 'white':
-                    material_balance += piece.value
-                else:
-                    material_balance -= piece.value
-        return material_balance
-
     def get_mobility_score(self, game):
         """Returns the mobility score of the board"""
         white_mobility_score = self.get_mobility_score_for_color(game, 'white')
         black_mobility_score = self.get_mobility_score_for_color(game, 'black')
-        print('White mobility score: {}'.format(white_mobility_score))
-        print('Black mobility score: {}'.format(black_mobility_score))
+        # print('White mobility score: {}'.format(white_mobility_score))
+        # print('Black mobility score: {}'.format(black_mobility_score))
         mobility_score = white_mobility_score - black_mobility_score
         return mobility_score
 
@@ -456,6 +453,7 @@ class Engine:
             if len(passed_pawns) > 0:
                 positional_score += self.PASSED_PAWN_BONUS
 
-        print("Evaluated positional score for", color, "as", positional_score)
+        positional_score *= self.POSITIONAL_WEIGHT
+        # print("Evaluated positional score for", color, "as", positional_score)
 
-        return positional_score * self.POSITIONAL_WEIGHT
+        return positional_score
