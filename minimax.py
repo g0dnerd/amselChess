@@ -22,7 +22,7 @@ def order_moves(state):
         # Then, order by check
         for move in legal_moves:
             new_state = state.apply_move(move[0], move[1])
-            if new_state.is_in_check():
+            if new_state.is_in_check(new_state.current_player):
                 if move not in ordered_moves:
                     ordered_moves.append(move)
         # Finally, order by threat
@@ -30,7 +30,7 @@ def order_moves(state):
             new_state = state.apply_move(move[0], move[1])
             if new_state.is_checkmate():
                 ordered_moves.append(move)
-            elif new_state.is_in_check():
+            elif new_state.is_in_check(new_state.current_player):
                 continue
             else:
                 piece = state.board.get_piece_by_square(move[0])
