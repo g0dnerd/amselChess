@@ -4,7 +4,8 @@
 import pygame
 import pygame.freetype
 import util
-from mcts import Tree
+# from mcts import Tree
+from minimax import Minimax
 import amsel_engine
 
 
@@ -24,6 +25,7 @@ class PygameGUI:
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.label_font = pygame.freetype.Font('./assets/fonts/Roboto-Bold.ttf', 16)
         self.annotation_font = pygame.freetype.Font('./assets/fonts/Roboto-Regular.ttf', 16)
+        self.evaluation = 0.0
 
         self.buttons = {
             'square_color': {
@@ -49,6 +51,12 @@ class PygameGUI:
                 'text': 'Make Best Move',
                 'color': self.BUTTON_COLOR,
                 'function': self.make_engine_move
+            },
+            'print_legal_moves': {
+                'rect': pygame.Rect(self.SCREEN_WIDTH // 2 + 50 + 250, self.SCREEN_HEIGHT // 2 - 100, 200, 50),
+                'text': 'Print Legal Moves',
+                'color': self.BUTTON_COLOR,
+                'function': self.print_legal_moves
             },
         }
 
@@ -87,15 +95,19 @@ class PygameGUI:
                     piece_image = pygame.transform.scale(piece_image, (self.cell_size, self.cell_size))
                     self.screen.blit(piece_image, (i * self.cell_size, j * self.cell_size))
 
+    def print_legal_moves(self):
+        """Prints the legal moves of the current player."""
+        print(self.game.get_valid_moves())
+
     def export_pgn(self):
         """Exports the game's PGN to a file."""
         util.export_pgn(self.game)
 
     def make_engine_move(self):
         """Makes the engine's best move."""
-        tree = Tree(self.game)
-        move = tree.find_best_move()
-        self.game.make_move(move[0], move[1])
+        mm = Minimax()
+        best_move = mm.find_best_move(self.game)
+        self.game.make_move(best_move[0], best_move[1])
 
     def toggle_square_color(self):
         if self.light_square_color == (255, 206, 158):
@@ -107,7 +119,8 @@ class PygameGUI:
         self.button_hover_color = self.dark_square_color
 
     def evaluate_position(self):
-        print(self.engine.evaluate_position(self.game))
+        self.evaluation = self.engine.evaluate_position(self.game)
+        print(self.evaluation)
 
     def update_board(self, board):
         self.game.board = board
@@ -141,6 +154,10 @@ class PygameGUI:
         pgn_text, _ = self.annotation_font.render(f'PGN: {self.game.pgn}', (255, 255, 255))
         pgn_rect = pgn_text.get_rect(midleft=(self.SCREEN_WIDTH // 2 + 50, self.SCREEN_HEIGHT // 2))
 
+        # set up evaluation text
+        eval_text, _ = self.annotation_font.render(f'Evaluation: {self.evaluation}', (255, 255, 255))
+        eval_rect = eval_text.get_rect(midleft=(self.SCREEN_WIDTH // 2 + 50, self.SCREEN_HEIGHT // 2 - 100))
+
         # set up game result text
         game_result = self.game.get_game_result()
         if game_result == 'checkmate':
@@ -159,6 +176,7 @@ class PygameGUI:
         self.screen.blit(current_player_text, current_player_rect)
         self.screen.blit(pgn_text, pgn_rect)
         self.screen.blit(game_result_text, game_result_rect)
+        self.screen.blit(eval_text, eval_rect)
 
     def display_promotion_interface(self, position):
         # TODO

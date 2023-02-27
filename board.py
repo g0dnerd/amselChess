@@ -35,7 +35,7 @@ class Board:
         for y in range(8):
             row = []
             for x in range(8):
-                row.append(f"{chr(ord('h') - x)}{8 - y}")
+                row.append(f"{chr(ord('a') + x)}{8 - y}")
             rows.append(row)
         # Create a string representation of the board
         ranks = ['']
@@ -61,6 +61,28 @@ class Board:
             if self.board[square]:
                 total_pieces += 1
         return total_pieces
+
+    def is_middle_game(self):
+        """Checks if the current game is in the middle game stage.
+        The middle game stage is defined as the phase of the game where
+        both players have developed most of their minor pieces."""
+
+        # If the game is in the endgame phase, it is not in the middle game phase
+        if self.is_endgame():
+            return False
+
+        # If 3 or more knights or bishops have been moved, the game is in the middle game phase
+        pieces = self.get_pieces_by_type('knight') + self.get_pieces_by_type('bishop')
+        moved_pieces = 0
+        for piece in pieces:
+            if piece.moved:
+                moved_pieces += 1
+        if moved_pieces >= 3:
+            return True
+
+        # Otherwise, the game is not in the middle game phase
+        return False
+
 
     def is_endgame(self):
         """Check if the current board state is in the endgame phase"""

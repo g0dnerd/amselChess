@@ -199,7 +199,7 @@ def get_material_score(game):
                 material_balance += piece.value
             else:
                 material_balance -= piece.value
-    return material_balance * 10
+    return material_balance
 
 
 class Engine:
@@ -269,7 +269,7 @@ class Engine:
                 [20, 30, 10, 0, 0, 10, 30, 20]
             ]
         }
-        self.POSITIONAL_WEIGHT = 0.01
+        self.POSITIONAL_WEIGHT = 0.005
         self.DOUBLED_PAWN_PENALTY = 20
         self.ISOLATED_PAWN_PENALTY = 10
         self.BACKWARD_PAWN_PENALTY = 15
@@ -281,12 +281,18 @@ class Engine:
         # print('Evaluating position...')
         material_score = get_material_score(game)
         mobility_score = self.get_mobility_score(game)
-        white_pawn_score = get_pawn_score(game, game.current_player)
-        black_pawn_score = get_pawn_score(game, util.get_opponent_color(game.current_player))
+        white_pawn_score = get_pawn_score(game, 'white')
+        black_pawn_score = get_pawn_score(game, 'black')
         pawn_score = black_pawn_score - white_pawn_score
-        white_king_safety_score = self.get_king_safety_score(game, 'white')
-        black_king_safety_score = self.get_king_safety_score(game, 'black')
-        king_safety_score = white_king_safety_score - black_king_safety_score
+        white_king_safety_score = 0
+        black_king_safety_score = 0
+        king_safety_score = 0
+        if game.board.is_middle_game() or game.board.is_endgame():
+            white_king_safety_score = self.get_king_safety_score(game, 'white')
+            black_king_safety_score = self.get_king_safety_score(game, 'black')
+            king_safety_score = white_king_safety_score - black_king_safety_score
+        white_positional_score = self.get_positional_score(game, 'white')
+        black_positional_score = self.get_positional_score(game, 'black')
 
         # print('Material score: {}'.format(material_score))
         # print('Mobility score: {}'.format(mobility_score))
@@ -296,9 +302,8 @@ class Engine:
         # print('White king safety score: {}'.format(white_king_safety_score))
         # print('Black king safety score: {}'.format(black_king_safety_score))
         # print('King safety score: {}'.format(king_safety_score))
-
-        white_positional_score = self.get_positional_score(game, game.current_player)
-        black_positional_score = self.get_positional_score(game, util.get_opponent_color(game.current_player))
+        # print('White positional score: {}'.format(white_positional_score))
+        # print('Black positional score: {}'.format(black_positional_score))
         positional_score = black_positional_score - white_positional_score
 
         total_score = material_score + mobility_score + pawn_score + king_safety_score + positional_score
@@ -309,8 +314,6 @@ class Engine:
         """Returns the mobility score of the board"""
         white_mobility_score = self.get_mobility_score_for_color(game, 'white')
         black_mobility_score = self.get_mobility_score_for_color(game, 'black')
-        # print('White mobility score: {}'.format(white_mobility_score))
-        # print('Black mobility score: {}'.format(black_mobility_score))
         mobility_score = white_mobility_score - black_mobility_score
         return mobility_score
 
@@ -421,37 +424,22 @@ class Engine:
             # These values are stored in the POSITION_VALUES dictionary.
             if piece.type == 'pawn':
                 if piece.color == 'white':
-                    positional_score += self.POSITIONAL_VALUES[piece.type][piece_x][piece_y]
-                    # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][piece_x][piece_y],
-                    #      'for', piece.color, piece.type, 'at position:', piece_pos)
+                    positional_score += self.POSITIONAL_VALUES[piece.type][piece_y][piece_x]
+                    # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][piece_y][piece_x],
+#                          'for', piece.color, piece.type, 'at position:', piece_pos)
                 else:
-                    positional_score += self.POSITIONAL_VALUES[piece.type][piece_x][7 - piece_y]
-                    # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][piece_x][7 - piece_y],
-                    #      'for', piece.color, piece.type, 'at position:', piece_pos)
+                    positional_score += self.POSITIONAL_VALUES[piece.type][7 - piece_y][piece_x]
+                    # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][7 - piece_y][piece_x],
+#                          'for', piece.color, piece.type, 'at position:', piece_pos)
             else:
-                positional_score += self.POSITIONAL_VALUES[piece.type][piece_x][piece_y]
-                # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][piece_x][piece_y],
-                #      'for', piece.color, piece.type, 'at position:', piece_pos)
-
-            # Check for doubled pawns
-            doubled_pawns = get_doubled_pawns(game, color)
-            if len(doubled_pawns) > 0:
-                positional_score -= self.DOUBLED_PAWN_PENALTY
-
-            # Check for isolated pawns
-            isolated_pawns = get_isolated_pawns(game, color)
-            if len(isolated_pawns) > 0:
-                positional_score -= self.ISOLATED_PAWN_PENALTY
-
-            # Check for backward pawns
-            backward_pawns = get_backward_pawns(game, color)
-            if len(backward_pawns) > 0:
-                positional_score -= self.BACKWARD_PAWN_PENALTY
-
-            # Check for passed pawns
-            passed_pawns = get_passed_pawns(game, color)
-            if len(passed_pawns) > 0:
-                positional_score += self.PASSED_PAWN_BONUS
+                if piece.color == 'white':
+                    positional_score += self.POSITIONAL_VALUES[piece.type][piece_y][piece_x]
+                    # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][piece_y][piece_x],
+                     # 'for', piece.color, piece.type, 'at position:', piece_pos)
+                else:
+                    positional_score += self.POSITIONAL_VALUES[piece.type][7 - piece_y][piece_x]
+                    # print('Added to positional score:', self.POSITIONAL_VALUES[piece.type][7 - piece_y][piece_x],
+                     # 'for', piece.color, piece.type, 'at position:', piece_pos)
 
         positional_score *= self.POSITIONAL_WEIGHT
         # print("Evaluated positional score for", color, "as", positional_score)

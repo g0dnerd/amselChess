@@ -166,6 +166,137 @@ class Game:
 
         return True
 
+    def apply_move(self, start, end):
+        """Make a move on the board and update the game state"""
+        state = copy.deepcopy(self)
+        # Get the piece at the start position
+        captured_piece = None
+        piece = state.board.get_piece_by_square(start)
+        if piece is None:
+            print('No piece at start position, was given move: ' + start + end)
+            print('In board state', state.board)
+            print('With move history', state.move_history)
+
+        # Update the move history
+        state.move_history.append((start, end))
+
+        # Update the FEN history
+        state.fen_history.append(state.board.get_fen())
+
+        # Update the captured piece
+        # If the moved piece is not a pawn:
+        if piece.type != 'pawn':
+            captured_piece = state.board.get_piece_by_square(end)
+        elif piece.type == 'pawn' and state.board.get_piece_by_square(end) is not None:
+            captured_piece = state.board.get_piece_by_square(end)
+        elif piece.type == 'pawn' and state.board.get_piece_by_square(end) is None and (end[0] != start[0]):
+            captured_piece_coordinates = util.square_to_coordinates(end)[0], util.square_to_coordinates(start)[1]
+            captured_piece_square = util.coordinates_to_square(
+                captured_piece_coordinates[0], captured_piece_coordinates[1])
+            captured_piece = state.board.get_piece_by_square(captured_piece_square)
+            state.board.remove_piece(captured_piece_square)
+
+        # Make the move
+        state.board.move_piece(start, end)
+
+        castling = False
+
+        # If the move was a pawn promotion
+        if piece.type == 'pawn':
+            if state.current_player == 'white':
+                if end[1] == '8':
+                    state.promotion = True
+            else:
+                if end[1] == '1':
+                    state.promotion = True
+
+        # If the move is a castling move
+        if piece.type == 'king' and abs(ord(start[0]) - ord(end[0])) == 2:
+            castling = True
+            if start == 'e1':
+                if end == 'g1':
+                    state.board.move_piece('h1', 'f1')
+                else:
+                    state.board.move_piece('a1', 'd1')
+            else:
+                if end == 'g8':
+                    state.board.move_piece('h8', 'f8')
+                else:
+                    state.board.move_piece('a8', 'd8')
+
+        state.white_king_pos = state.board.get_king_position('white')
+        state.black_king_pos = state.board.get_king_position('black')
+        state.update_attackers('white')
+        state.update_attackers('black')
+
+        if captured_piece is not None or piece.type == 'pawn':
+            state.half_move_clock = 0
+        else:
+            state.half_move_clock += 1
+
+        # Switch players
+        if state.current_player == 'white':
+            state.current_player = 'black'
+        else:
+            state.current_player = 'white'
+
+        state.update_game_result()
+
+        # Update the PGN
+        # print("Updating PGN")
+        # print("Piece was a", piece.type, "of color", piece.color)
+        # print("Move was", start, "to", end)
+        # print("Captured piece was", captured_piece)
+        # print("Current player is", state.current_player)
+        if state.current_player == 'black':
+            state.pgn += str(state.full_move_number) + '. '
+        if castling:
+            if end[0] == 'g':
+                state.pgn += 'O-O'
+            else:
+                state.pgn += 'O-O-O'
+        else:
+            if piece.type == 'pawn' and captured_piece is not None:
+                state.pgn += start[0]
+            elif piece.type == 'pawn' and captured_piece is None and end[0] != start[0]:
+                state.pgn += start[0]
+            elif piece.type != 'pawn':
+                state.pgn += piece.letter.upper()
+            if captured_piece is not None:
+                state.pgn += 'x'
+            state.pgn += end
+            if state.promotion:
+                state.pgn += '=Q'
+            if state.is_checkmate():
+                state.pgn += '#'
+            else:
+                if state.is_in_check(state.current_player):
+                    state.pgn += '+'
+
+        state.pgn += ' '
+
+        # Update the full move number
+        if state.current_player == 'white':
+            state.full_move_number += 1
+
+        # Update castling rights
+        if piece.type == 'king':
+            state.castling_rights[piece.color]['K'] = False
+            state.castling_rights[piece.color]['Q'] = False
+        elif piece.type == 'rook':
+            if piece.color == 'white':
+                if piece.position[0] == 0:
+                    state.castling_rights['white']['Q'] = False
+                elif piece.position[0] == 7:
+                    state.castling_rights['white']['K'] = False
+            else:
+                if piece.position[0] == 0:
+                    state.castling_rights['black']['Q'] = False
+                elif piece.position[0] == 7:
+                    state.castling_rights['black']['K'] = False
+
+        return state
+
     def update_attackers(self, color):
         # Update the list of possible attacker squares on the king of the given color
         king_pos = self.white_king_pos if color == 'white' else self.black_king_pos
@@ -339,7 +470,7 @@ class Game:
             # print("Rook to move:", rook_piece.square)
 
             if rook_piece.square[0] == 'h':
-                if rook_piece.square[1] == 1:
+                if rook_piece.square[1] == '1':
                     game_copy.board.move_piece('e1', 'f1')
                     if game_copy.is_in_check(game_copy.current_player):
                         return False
@@ -519,3 +650,10 @@ class Game:
     def get_move_by_number(self, move_number):
         """Returns the move at the given move number"""
         return self.move_history[move_number]
+
+    def is_capture(self, move):
+        """Returns True if the given move is a capture, False otherwise"""
+        end = move[1]
+        if self.board.get_piece_by_square(end) is not None:
+            return True
+        return False

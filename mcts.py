@@ -1,7 +1,8 @@
 import random
 import math
 import copy
-import sys
+import multiprocessing as mp
+import numpy as np
 
 import amsel_engine
 
@@ -37,24 +38,31 @@ class Node:
 
 
 def expand(node):
+    # print('Expanding node')
     valid_moves = node.state.get_valid_moves()
+    random.shuffle(valid_moves)
     for move in valid_moves:
-        new_state = copy.deepcopy(node.state)
-        new_state.make_move(move[0], move[1])
-        child_node = Node(new_state, node)
+        child_state = copy.deepcopy(node.state)
+        child_state.make_move(move[0], move[1])
+        child_node = node.add_child(child_state)
         child_node.move = move
-        node.children.append(child_node)
+        # print('Added child with move', move)
+    return node
 
 
 def backpropagation(node, score):
     while node is not None:
-        node.update(abs(score))
+        if node.state.current_player == 'black':
+            node.update(-score)
+        else:
+            node.update(score)
+        # print('Updated node with moves', node.state.move_history, 'with score', score)
         node = node.parent
 
 
 class Tree:
-    MAX_DEPTH = 12
-    MAX_SIMULATIONS = 25
+    MAX_DEPTH = 10
+    MAX_SIMULATIONS = 50
 
     def __init__(self, state):
         self.num_simulations = 0
@@ -74,6 +82,7 @@ class Tree:
                 if ucb > max_ucb:
                     max_ucb = ucb
                     selected_child = child
+                    # print('Selected child:', selected_child.move)
         return self.select(selected_child)
 
     def simulation(self, node):
@@ -81,10 +90,8 @@ class Tree:
         state = copy.deepcopy(node.state)
         depth = 0
         while not state.is_game_over() and depth < self.MAX_DEPTH:
-            printout = 'Running random simulation at depth ' + str(depth + 1)
-            print(printout, end='\r')
-            sys.stdout.flush()
             move = random.choice(state.get_valid_moves())
+            # print('Randomly selected move:', move)
             state.make_move(move[0], move[1])
             depth += 1
         if state.is_game_over():
@@ -96,27 +103,31 @@ class Tree:
             else:
                 # print('returning 0.5')
                 return 0.5
-        evaluation = self.engine.evaluate_position(state)/100
-        # print('returning', evaluation)
+        evaluation = self.engine.evaluate_position(state) / 100
+        # print('returning', evaluation, 'after moves', state.move_history)
         return evaluation
 
     def find_best_move(self):
+        print('')
         for _ in range(self.MAX_SIMULATIONS):
-            print('Simulation number:', _+1, 'of', self.MAX_SIMULATIONS)
+            # printout = 'Running random simulation at depth ' + str(depth + 1)
+            # print(printout, end='\r')
+            printout = 'Running simulation ' + str(_ + 1)
+            print(printout, end='\r')
             node = self.root
             state = copy.deepcopy(node.state)
-            depth = 0
 
             while not node.is_fully_expanded() and node.children:
+                # print('Selecting child node')
                 node = node.select_child()
                 state.make_move(node.move[0], node.move[1])
-                depth += 1
-                print('Depth:', depth, 'Move:', node.move)
 
             if not node.is_fully_expanded():
+                # print('simulating not fully expanded node')
                 expand(node)
                 score = self.simulation(node)
             else:
+                # print('simulating fully expanded node')
                 score = self.simulation(node)
 
             while node is not None:
@@ -133,5 +144,3 @@ class Tree:
                 best_node = child
 
         return best_node.move
-
-
