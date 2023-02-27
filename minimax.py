@@ -3,16 +3,6 @@ from collections import defaultdict
 from amsel_engine import Engine
 from dataclasses import dataclass
 
-PIECE_VALUES = {
-    'pawn': 100,
-    'knight': 320,
-    'bishop': 330,
-    'rook': 500,
-    'queen': 900,
-    'king': 20000
-}
-
-
 @dataclass
 class MinMaxValues:
     alpha: float = float('-inf')
@@ -60,8 +50,8 @@ def order_moves(state):
 
 
 class Minimax:
-    MAX_DEPTH = 15
-    THREADS = 8
+    MAX_DEPTH = 12
+    THREADS = 6
 
     def __init__(self):
         self.engine = Engine()
