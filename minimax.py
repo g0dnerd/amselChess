@@ -1,7 +1,6 @@
 from concurrent.futures import ProcessPoolExecutor as Pool
 from itertools import repeat
 from multiprocessing import current_process
-import time
 from amsel_engine import Engine
 
 
