@@ -60,7 +60,7 @@ class Minimax:
             best_value = float('-inf')
             best_move = None
             for move in order_moves(state):
-                print(f'Processing state {state.move_history} at depth {depth}')
+                print(f'Processing state {state.move_history} at depth {self.MAX_DEPTH - depth}')
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
                 value, _ = self.minimax(new_state, depth - 1, mm_values, False, new_path)
