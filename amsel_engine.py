@@ -199,7 +199,7 @@ def get_material_score(game):
                 material_balance += piece.value
             else:
                 material_balance -= piece.value
-    return material_balance
+    return material_balance * 3
 
 
 class Engine:
@@ -279,13 +279,17 @@ class Engine:
 
     def evaluate_position(self, game):
         # print('Evaluating position...')
+        if game.game_result == '1-0':
+            return 1000000
+        elif game.game_result == '0-1':
+            return -1000000
+        elif game.game_result == 'draw' or game.game_result == 'stalemate':
+            return 0
         material_score = get_material_score(game)
         mobility_score = self.get_mobility_score(game)
         white_pawn_score = get_pawn_score(game, 'white')
         black_pawn_score = get_pawn_score(game, 'black')
         pawn_score = black_pawn_score - white_pawn_score
-        white_king_safety_score = 0
-        black_king_safety_score = 0
         king_safety_score = 0
         if game.board.is_middle_game() or game.board.is_endgame():
             white_king_safety_score = self.get_king_safety_score(game, 'white')
@@ -294,16 +298,6 @@ class Engine:
         white_positional_score = self.get_positional_score(game, 'white')
         black_positional_score = self.get_positional_score(game, 'black')
 
-        # print('Material score: {}'.format(material_score))
-        # print('Mobility score: {}'.format(mobility_score))
-        # print('White pawn score: {}'.format(white_pawn_score))
-        # print('Black pawn score: {}'.format(black_pawn_score))
-        # print('Pawn score: {}'.format(white_pawn_score - black_pawn_score))
-        # print('White king safety score: {}'.format(white_king_safety_score))
-        # print('Black king safety score: {}'.format(black_king_safety_score))
-        # print('King safety score: {}'.format(king_safety_score))
-        # print('White positional score: {}'.format(white_positional_score))
-        # print('Black positional score: {}'.format(black_positional_score))
         positional_score = black_positional_score - white_positional_score
 
         total_score = material_score + mobility_score + pawn_score + king_safety_score + positional_score

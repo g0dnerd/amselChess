@@ -69,7 +69,7 @@ class Minimax:
                     best_move = move
                 mm_values.alpha = max(mm_values.alpha, value)
                 if mm_values.alpha >= mm_values.beta:
-                    print(f'Pruning {new_path} at depth {depth} with value {value}')
+                    print(f'Pruning {new_path} at depth {self.MAX_DEPTH - depth} with value {value}')
                     break
             return best_value, best_move
         else:
