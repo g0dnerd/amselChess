@@ -304,6 +304,12 @@ class Engine:
 
         return total_score
 
+    def evaluate_for_maximizing_player(self, game):
+        if game.current_player == 'white':
+            return self.evaluate_position(game)
+        else:
+            return -self.evaluate_position(game)
+
     def get_mobility_score(self, game):
         """Returns the mobility score of the board"""
         white_mobility_score = self.get_mobility_score_for_color(game, 'white')

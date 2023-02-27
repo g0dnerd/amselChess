@@ -55,7 +55,7 @@ class Minimax:
         if path is None:
             path = []
         if depth == 0 or state.is_game_over():
-            return self.engine.evaluate_position(state), None
+            return self.engine.evaluate_for_maximizing_player(state), None
         if maximizing_player:
             best_value = float('-inf')
             best_move = None
