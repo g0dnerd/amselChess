@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from amsel_engine import Engine
 from dataclasses import dataclass
+import util
 
 @dataclass
 class MinMaxValues:
@@ -35,7 +36,8 @@ def order_moves(state):
             else:
                 piece = state.board.get_piece_by_square(move[0])
                 threatened_squares = piece.get_legal_moves(state.board)
-                for threatened_square in threatened_squares:
+                for threatened_pos in threatened_squares:
+                    threatened_square = util.coordinates_to_square(threatened_pos[0], threatened_pos[1])
                     threatened_piece = new_state.board.get_piece_by_square(threatened_square)
                     if threatened_piece is not None and threatened_piece.color != piece.color:
                         if move not in ordered_moves:
