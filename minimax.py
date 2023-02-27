@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from amsel_engine import Engine
+from dataclasses import dataclass
 
 PIECE_VALUES = {
     'pawn': 100,
@@ -10,6 +11,12 @@ PIECE_VALUES = {
     'queen': 900,
     'king': 20000
 }
+
+
+@dataclass
+class MinMaxValues:
+    alpha: float = float('-inf')
+    beta: float = float('inf')
 
 
 def order_moves(state):
@@ -44,7 +51,7 @@ class Minimax:
         self.engine = Engine()
         self.history = defaultdict(list)
 
-    def minimax(self, state, depth, alpha, beta, maximizing_player, path=None):
+    def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
         if path is None:
             path = []
         if depth == 0 or state.is_game_over():
@@ -56,12 +63,12 @@ class Minimax:
                 print(f'Processing state {state.move_history} at depth {depth}')
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
-                value, _ = self.minimax(new_state, depth - 1, alpha, beta, False, new_path)
+                value, _ = self.minimax(new_state, depth - 1, mm_values, False, new_path)
                 if value > best_value:
                     best_value = value
                     best_move = move
-                alpha = max(alpha, value)
-                if alpha >= beta:
+                mm_values.alpha = max(mm_values.alpha, value)
+                if mm_values.alpha >= mm_values.beta:
                     print(f'Pruning {new_path} at depth {depth} with value {value}')
                     break
             return best_value, best_move
@@ -71,23 +78,25 @@ class Minimax:
             for move in order_moves(state):
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
-                value, _ = self.minimax(new_state, depth - 1, alpha, beta, True, new_path)
+                value, _ = self.minimax(new_state, depth - 1, mm_values, True, new_path)
                 if value < best_value:
                     best_value = value
                     best_move = move
-                beta = min(beta, value)
-                if alpha >= beta:
+                mm_values.beta = min(mm_values.beta, value)
+                if mm_values.alpha >= mm_values.beta:
                     print(f'Pruning {new_path} at depth {depth} with value {value}')
                     break
             return best_value, best_move
 
     def find_best_move(self, state):
         with ThreadPoolExecutor(max_workers=self.THREADS) as executor:
+            mm_values = MinMaxValues()
             results = []
-            for move in state.get_valid_moves():
+            moves = order_moves(state)
+            for move in moves:
                 print(f'Processing move {move}')
-                result = executor.submit(self.minimax, state.apply_move(move[0], move[1]), self.MAX_DEPTH - 1,
-                                         float('-inf'), float('inf'), False, [move])
+                result = executor.submit(
+                    self.minimax, state.apply_move(move[0], move[1]), self.MAX_DEPTH - 1, mm_values, False, [move])
                 results.append(result)
             best_value = float('-inf')
             best_move = None
@@ -96,4 +105,5 @@ class Minimax:
                 if value > best_value:
                     best_value = value
                     best_move = move
+                mm_values.alpha = max(mm_values.alpha, value)
             return best_move
