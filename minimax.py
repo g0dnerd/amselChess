@@ -22,7 +22,7 @@ def order_moves(state):
         # Then, order by check
         for move in legal_moves:
             new_state = state.apply_move(move[0], move[1])
-            if new_state.is_check():
+            if new_state.is_in_check():
                 if move not in ordered_moves:
                     ordered_moves.append(move)
         # Finally, order by threat
