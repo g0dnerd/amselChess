@@ -16,13 +16,13 @@ if __name__ == "__main__":
 
         # If it's white's turn, get input from the user
         if game.current_player == 'white':
-            move = input('Enter your move: ')
-            move = move.split(' ')
-            game.make_move((move[0]), (move[1]))
-            continue
-        else:
             print('Computer is thinking...')
             # Get the best move
             move = minimax.find_best_move(game)
             # Make the move
             game.make_move(move[0], move[1])
+        else:
+            move = input('Enter your move: ')
+            move = move.split(' ')
+            game.make_move((move[0]), (move[1]))
+            continue
