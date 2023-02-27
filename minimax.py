@@ -34,7 +34,7 @@ def order_moves(state):
                 continue
             else:
                 piece = state.board.get_piece_by_square(move[0])
-                threatened_squares = piece.get_threatened_squares()
+                threatened_squares = piece.get_legal_moves(state.board)
                 for threatened_square in threatened_squares:
                     threatened_piece = new_state.board.get_piece_by_square(threatened_square)
                     if threatened_piece is not None and threatened_piece.color != piece.color:
