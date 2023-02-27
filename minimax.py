@@ -29,18 +29,34 @@ def order_moves(state):
         for move in legal_moves:
             if state.is_capture(move):
                 ordered_moves.append(move)
-        # Then, order by piece mobility
-        piece_mobility_scores = {}
+        # Then, order by check
         for move in legal_moves:
-            piece = state.board.get_piece_by_square(move[0]).type
-            if piece in piece_mobility_scores:
-                piece_mobility_scores[piece] += PIECE_VALUES[piece]
+            new_state = state.apply_move(move[0], move[1])
+            if new_state.is_check():
+                if move not in ordered_moves:
+                    ordered_moves.append(move)
+        # Finally, order by threat
+        for move in legal_moves:
+            new_state = state.apply_move(move[0], move[1])
+            if new_state.is_checkmate():
+                ordered_moves.append(move)
+            elif new_state.is_in_check():
+                continue
             else:
-                piece_mobility_scores[piece] = PIECE_VALUES[piece]
-        ordered_moves += sorted(legal_moves,
-                                key=lambda move: piece_mobility_scores.get(
-                                    state.board.get_piece_by_square(move[0]).type, 0), reverse=True)
+                piece = state.board.get_piece_by_square(move[0])
+                threatened_squares = piece.get_threatened_squares()
+                for threatened_square in threatened_squares:
+                    threatened_piece = new_state.board.get_piece_by_square(threatened_square)
+                    if threatened_piece is not None and threatened_piece.color != piece.color:
+                        if move not in ordered_moves:
+                            ordered_moves.append(move)
+                            break
+        # Finally, add any remaining legal moves that haven't been added yet
+        for move in legal_moves:
+            if move not in ordered_moves:
+                ordered_moves.append(move)
         return ordered_moves
+
 
 
 class Minimax:
