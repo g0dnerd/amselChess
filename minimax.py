@@ -44,8 +44,8 @@ def order_moves(state):
 
 
 class Minimax:
-    MAX_DEPTH = 10
-    THREADS = 6
+    MAX_DEPTH = 15
+    THREADS = 8
 
     def __init__(self):
         self.engine = Engine()
