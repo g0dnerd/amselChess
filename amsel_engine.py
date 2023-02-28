@@ -289,13 +289,13 @@ class Engine:
         white_pawn_score = get_pawn_score(game, 'white')
         black_pawn_score = get_pawn_score(game, 'black')
         pawn_score = black_pawn_score - white_pawn_score
-        print('Pawn score: {}'.format(pawn_score))
+        # print('Pawn score: {}'.format(pawn_score))
         king_safety_score = 0
         if game.board.is_middle_game() or game.board.is_endgame():
             white_king_safety_score = self.get_king_safety_score(game, 'white')
-            print('White king safety score: {}'.format(white_king_safety_score))
+            # print('White king safety score: {}'.format(white_king_safety_score))
             black_king_safety_score = self.get_king_safety_score(game, 'black')
-            print('Black king safety score: {}'.format(black_king_safety_score))
+            # print('Black king safety score: {}'.format(black_king_safety_score))
             king_safety_score = white_king_safety_score - black_king_safety_score
         white_positional_score = self.get_positional_score(game, 'white')
         black_positional_score = self.get_positional_score(game, 'black')
@@ -333,7 +333,7 @@ class Engine:
         mobility_score *= self.MOBILITY_WEIGHT
         if switched:
             game.current_player = util.get_opponent_color(color)
-        print('Mobility score for {}: {}'.format(color, mobility_score))
+        # print('Mobility score for {}: {}'.format(color, mobility_score))
         return mobility_score
 
     def get_king_safety_score(self, game, color):
@@ -436,6 +436,6 @@ class Engine:
                 else:
                     positional_score += self.POSITIONAL_VALUES[piece.type][7 - piece_y][piece_x]
 
-        print("Evaluated positional score for", color, "as", positional_score)
+        # print("Evaluated positional score for", color, "as", positional_score)
 
         return positional_score
