@@ -101,18 +101,18 @@ class Minimax:
             mm_values = MinMaxValues()
             results = []
             initial_moves = order_moves(state)
-            for move in initial_moves:
-                new_state = state.apply_move(move[0], move[1])
-                print('Spawning process for move', move)
-                result = executor.submit(
-                    self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
-                if result.result()[0] > 1000:
+            for move, result in zip(initial_moves, executor.map(
+                    lambda m: self.minimax(state.apply_move(m[0], m[1]), self.MAX_DEPTH - 1, mm_values, True, [m]),
+                    initial_moves
+            )):
+                if result[0] > 1000:
                     return move
                 results.append((move, result))
+                mm_values.alpha = max(mm_values.alpha, result[0])
             best_value = float('-inf')
             best_move = None
             for move, result in results:
-                value, _ = result.result()
+                value, _ = result
                 if value > best_value:
                     best_value = value
                     best_move = move
