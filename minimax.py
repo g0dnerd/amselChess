@@ -1,5 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from collections import defaultdict
+import concurrent.futures
 from multiprocessing import Manager
 from amsel_engine import Engine
 from dataclasses import dataclass
@@ -81,6 +80,7 @@ class Minimax:
                     best_move = move
                 mm_values.alpha = max(mm_values.alpha, value)
                 if mm_values.alpha >= mm_values.beta:
+                    best_move = move
                     print(f'Pruning {new_path} at depth {self.MAX_DEPTH - depth} with value {value}')
                     break
             return best_value, best_move
@@ -97,6 +97,7 @@ class Minimax:
                     best_move = move
                 mm_values.beta = min(mm_values.beta, value)
                 if mm_values.alpha >= mm_values.beta:
+                    best_move = move
                     print(f'Pruning {new_path} at depth {depth} with value {value}')
                     break
             return best_value, best_move
@@ -113,12 +114,12 @@ class Minimax:
 
     def find_best_move(self, state):
         start_time = time.time()
-        with ThreadPoolExecutor(max_workers=self.THREADS) as thread_executor, \
-                ProcessPoolExecutor() as process_executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.THREADS) as thread_executor, \
+                concurrent.futures.ProcessPoolExecutor() as process_executor:
             mm_values = MinMaxValues()
-            results = []
             initial_moves = order_moves(state)
             batches = [initial_moves[i:i + self.BATCH_SIZE] for i in range(0, len(initial_moves), self.BATCH_SIZE)]
+            futures = []
             for batch in batches:
                 print('Spawning processes for batch', batch)
                 processes = []
@@ -128,7 +129,8 @@ class Minimax:
                         self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
                     processes.append((move, process))
                 for move, process in processes:
-                    thread_executor.submit(self.process_result, move, process, mm_values)
+                    futures.append(thread_executor.submit(self.process_result, move, process, mm_values))
+            concurrent.futures.wait(futures)
             best_value = float('-inf')
             best_move = None
             for move, result in self.results:
