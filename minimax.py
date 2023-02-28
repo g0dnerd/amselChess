@@ -1,4 +1,4 @@
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from collections import defaultdict
 from amsel_engine import Engine
 from dataclasses import dataclass
@@ -97,7 +97,7 @@ class Minimax:
             return best_value, best_move
 
     def find_best_move(self, state):
-        with concurrent.futures.ProcessPoolExecutor() as executor:
+        with ProcessPoolExecutor(max_workers=self.THREADS) as executor:
             mm_values = MinMaxValues()
             results = []
             initial_moves = order_moves(state)
