@@ -105,7 +105,7 @@ class PygameGUI:
 
     def make_engine_move(self):
         """Makes the engine's best move."""
-        mm = Minimax()
+        mm = Minimax(10, 6)
         best_move = mm.find_best_move(self.game)
         self.game.make_move(best_move[0], best_move[1])
 

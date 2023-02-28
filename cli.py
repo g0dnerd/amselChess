@@ -1,28 +1,36 @@
 from game import Game
 from minimax import Minimax
-
+import argparse
 # Command line interface to test the engine in.
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Test the chess engine.')
+    parser.add_argument('--depth', type=int, default=10, help='The depth of the minimax algorithm.')
+    parser.add_argument('--threads', type=int, default=4, help='The number of threads to use.')
+    args = parser.parse_args()
+    depth = args.depth
+    threads = args.threads
     # Initialize the game
     game = Game()
-    minimax = Minimax()
+    minimax = Minimax(depth, threads)
 
     # Play the game
     while not game.is_game_over():
         # Print the board
         print(game.board)
+        choice = input('Enter your move, "x" to let the engine make a move or "q" to quit: ')
 
-        # If it's white's turn, get input from the user
-        if game.current_player == 'white':
-            print('Computer is thinking...')
-            # Get the best move
+        if choice == 'q':
+            break
+        elif choice == 'x':
+            print('Calculating best move...')
             move = minimax.find_best_move(game)
-            # Make the move
             game.make_move(move[0], move[1])
         else:
-            move = input('Enter your move: ')
-            move = move.split(' ')
-            game.make_move((move[0]), (move[1]))
-            continue
+            try:
+                move = choice.split(' ')
+                game.make_move(move[0], move[1])
+            except:
+                print('Invalid move. Try again.')

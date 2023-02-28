@@ -52,12 +52,11 @@ def order_moves(state):
 
 
 class Minimax:
-    MAX_DEPTH = 10
-    THREADS = 6
-    BATCH_SIZE = 2
 
-    def __init__(self):
+    def __init__(self, depth, threads):
         self.engine = Engine()
+        self.max_depth = depth
+        self.threads = threads
 
     def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
         if path is None:
@@ -68,7 +67,7 @@ class Minimax:
             best_value = float('-inf')
             best_move = None
             for move in order_moves(state):
-                print(f'Processing state {state.move_history} at depth {self.MAX_DEPTH - depth}')
+                print(f'Processing state {state.move_history} at depth {self.max_depth - depth}')
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
                 value, _ = self.minimax(new_state, depth - 1, mm_values, False, new_path)
@@ -77,14 +76,14 @@ class Minimax:
                     best_move = move
                 mm_values.alpha = max(mm_values.alpha, value)
                 if mm_values.alpha >= mm_values.beta:
-                    print(f'Pruning {new_path} at depth {self.MAX_DEPTH - depth} with value {value}')
+                    print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
                     break
             return best_value, best_move
         else:
             best_value = float('inf')
             best_move = None
             for move in order_moves(state):
-                print(f'Processing state {state.move_history} at depth {self.MAX_DEPTH - depth}')
+                print(f'Processing state {state.move_history} at depth {self.max_depth - depth}')
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
                 value, _ = self.minimax(new_state, depth - 1, mm_values, True, new_path)
@@ -99,7 +98,7 @@ class Minimax:
 
     def find_best_move(self, state):
         start_time = time.time()
-        with ThreadPoolExecutor(max_workers=self.THREADS) as thread_executor:
+        with ThreadPoolExecutor(max_workers=self.threads) as thread_executor:
             mm_values = MinMaxValues()
             results = []
             initial_moves = order_moves(state)
@@ -107,7 +106,7 @@ class Minimax:
                 new_state = state.apply_move(move[0], move[1])
                 print('Submitting job for move', move)
                 result = thread_executor.submit(
-                    self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
+                    self.minimax, new_state, self.max_depth - 1, mm_values, True, [move])
                 if result.result()[0] > 1000:
                     return move
                 results.append((move, result))
