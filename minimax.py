@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from collections import defaultdict
 from amsel_engine import Engine
 from dataclasses import dataclass
+import time
 import util
 
 
@@ -97,24 +98,27 @@ class Minimax:
             return best_value, best_move
 
     def find_best_move(self, state):
+        start_time = time.time()
         with ProcessPoolExecutor() as executor:
             mm_values = MinMaxValues()
             results = []
             initial_moves = order_moves(state)
-            for move, result in zip(initial_moves, executor.map(
-                    lambda m: self.minimax(state.apply_move(m[0], m[1]), self.MAX_DEPTH - 1, mm_values, True, [m]),
-                    initial_moves
-            )):
-                if result[0] > 1000:
+            for move in initial_moves:
+                new_state = state.apply_move(move[0], move[1])
+                print('Spawning process for move', move)
+                result = executor.submit(
+                    self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
+                if result.result()[0] > 1000:
                     return move
                 results.append((move, result))
-                mm_values.alpha = max(mm_values.alpha, result[0])
             best_value = float('-inf')
             best_move = None
             for move, result in results:
-                value, _ = result
+                value, _ = result.result()
                 if value > best_value:
                     best_value = value
                     best_move = move
                 mm_values.alpha = max(mm_values.alpha, value)
+            total_time = time.perf_counter() - start_time
+            print(f'Found move {best_move} in {total_time:.4f} seconds')
             return best_move
