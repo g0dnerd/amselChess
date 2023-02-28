@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from collections import defaultdict
 from amsel_engine import Engine
 from dataclasses import dataclass
@@ -119,6 +119,6 @@ class Minimax:
                     best_value = value
                     best_move = move
                 mm_values.alpha = max(mm_values.alpha, value)
-            total_time = time.time() - start
+            total_time = time.time() - start_time
             print(f'Found move {best_move} in {total_time:.4f} seconds')
             return best_move
