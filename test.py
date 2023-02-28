@@ -53,10 +53,6 @@ class TestChessEngine(unittest.TestCase):
         # assert that the white bishop on c1 has no legal moves
         self.assertCountEqual(white_bishop.get_legal_moves(self.game.board), [])
 
-    def test_get_valid_moves(self):
-        # Tests the get_valid_moves method
-        print(self.game.get_valid_moves())
-
     def test_engine(self):
         # Tests the engine
         engine = Engine()

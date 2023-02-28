@@ -152,6 +152,7 @@ class Game:
         if piece.type == 'king':
             self.castling_rights[piece.color]['K'] = False
             self.castling_rights[piece.color]['Q'] = False
+            # print('King moved, castling rights for', piece.color, 'are now', self.castling_rights[piece.color])
         elif piece.type == 'rook':
             if piece.color == 'white':
                 if piece.position[0] == 0:
