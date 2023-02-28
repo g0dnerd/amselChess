@@ -262,12 +262,6 @@ class Engine:
                 [20, 30, 10, 0, 0, 10, 30, 20]
             ]
         }
-        self.DOUBLED_PAWN_PENALTY = 20
-        self.ISOLATED_PAWN_PENALTY = 10
-        self.BACKWARD_PAWN_PENALTY = 15
-        self.PASSED_PAWN_BONUS = 20
-        self.WEAK_PAWN_PENALTY = 10
-        self.PAWN_CHAIN_BONUS = 10
 
     def evaluate_position(self, game):
         if game.game_result == '1-0':
