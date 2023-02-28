@@ -1,4 +1,6 @@
+import copy
 from concurrent.futures import ThreadPoolExecutor
+import threading
 from amsel_engine import Engine
 from dataclasses import dataclass
 import time
@@ -8,8 +10,10 @@ import random
 
 @dataclass
 class MinMaxValues:
-    alpha: float = float('-inf')
-    beta: float = float('inf')
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.alpha: float = float('-inf')
+        self.beta: float = float('inf')
 
 
 def order_moves(state):
@@ -55,10 +59,9 @@ def order_moves(state):
 
 class Minimax:
 
-    def __init__(self, depth, threads):
+    def __init__(self, depth):
         self.engine = Engine()
         self.max_depth = depth + 1
-        self.threads = threads
 
     def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
         if path is None:
@@ -69,9 +72,9 @@ class Minimax:
             best_value = float('-inf')
             best_move = None
             for move in order_moves(state):
-                print(f'Processing state {state.move_history} at depth {self.max_depth - depth}')
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
+                print(f'Evaluating line {new_path}')
                 value, _ = self.minimax(new_state, depth - 1, mm_values, False, new_path)
                 if value > best_value:
                     best_value = value
@@ -85,9 +88,9 @@ class Minimax:
             best_value = float('inf')
             best_move = None
             for move in order_moves(state):
-                print(f'Processing state {state.move_history} at depth {self.max_depth - depth}')
                 new_state = state.apply_move(move[0], move[1])
                 new_path = path + [move]
+                print(f'Evaluating line {new_path}')
                 value, _ = self.minimax(new_state, depth - 1, mm_values, True, new_path)
                 if value < best_value:
                     best_value = value
@@ -100,26 +103,24 @@ class Minimax:
 
     def find_best_move(self, state):
         start_time = time.time()
-        with ThreadPoolExecutor(max_workers=self.threads) as thread_executor:
-            mm_values = MinMaxValues()
-            results = []
-            initial_moves = order_moves(state)
-            for move in initial_moves:
-                new_state = state.apply_move(move[0], move[1])
-                print('Submitting job for move', move)
-                result = thread_executor.submit(
-                    self.minimax, new_state, self.max_depth - 1, mm_values, True, [move])
-                if result.result()[0] > 1000:
-                    return move
-                results.append((move, result))
-            best_value = float('-inf')
-            best_move = None
-            for move, result in results:
-                value, _ = result.result()
-                if value > best_value:
-                    best_value = value
-                    best_move = move
-                mm_values.alpha = max(mm_values.alpha, value)
-            total_time = time.time() - start_time
-            print(f'Found move {best_move} in {total_time:.4f} seconds')
-            return best_move
+        mm_values = MinMaxValues()
+        results = []
+        initial_moves = order_moves(state)
+        for move in initial_moves:
+            new_state = state.apply_move(move[0], move[1])
+            print('Processing move', move)
+            result = self.minimax(new_state, self.max_depth - 1, mm_values, True, [move])
+            if result[0] > 1000:
+                return move
+            results.append((move, result))
+            mm_values.alpha = max(mm_values.alpha, result[0])
+        best_value = float('-inf')
+        best_move = None
+        for move, result in results:
+            value, _ = result
+            if value > best_value:
+                best_value = value
+                best_move = move
+        total_time = time.time() - start_time
+        print(f'Found move {best_move} in {total_time:.4f} seconds')
+        return best_move

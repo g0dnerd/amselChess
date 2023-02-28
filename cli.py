@@ -14,7 +14,7 @@ if __name__ == "__main__":
     threads = args.threads
     # Initialize the game
     game = Game()
-    minimax = Minimax(depth, threads)
+    minimax = Minimax(depth)
 
     # Play the game
     while not game.is_game_over():
