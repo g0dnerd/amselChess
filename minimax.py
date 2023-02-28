@@ -103,9 +103,9 @@ class Minimax:
             initial_moves = order_moves(state)
             for move in initial_moves:
                 new_state = state.apply_move(move[0], move[1])
+                print('Spawning process for move', move)
                 result = executor.submit(
                     self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
-                print('Spawned process for move', move)
                 if result.result()[0] > 1000:
                     return move
                 results.append((move, result))
