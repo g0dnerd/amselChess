@@ -128,8 +128,9 @@ class Minimax:
                     process = process_executor.submit(
                         self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
                     processes.append((move, process))
-                for move, process in processes:
-                    futures.append(thread_executor.submit(self.process_result, move, process, mm_values))
+                for process in concurrent.futures.as_completed([p[1] for p in processes]):
+                    move, result = [p for p in processes if p[1] == process][0]
+                    futures.append(thread_executor.submit(self.process_result, move, result, mm_values))
             concurrent.futures.wait(futures)
             best_value = float('-inf')
             best_move = None
