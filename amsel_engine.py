@@ -199,7 +199,7 @@ def get_material_score(game):
                 material_balance += piece.value
             else:
                 material_balance -= piece.value
-    return material_balance * 3
+    return material_balance * 8
 
 
 class Engine:

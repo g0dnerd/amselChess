@@ -52,7 +52,7 @@ def order_moves(state):
 
 
 class Minimax:
-    MAX_DEPTH = 12
+    MAX_DEPTH = 10
     THREADS = 6
 
     def __init__(self):
@@ -102,10 +102,11 @@ class Minimax:
             results = []
             initial_moves = order_moves(state)
             for move in initial_moves:
-                # print(f'Processing move {move}')
                 new_state = state.apply_move(move[0], move[1])
                 result = executor.submit(
                     self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
+                if result.result()[0] > 1000:
+                    return move
                 results.append((move, result))
             best_value = float('-inf')
             best_move = None
