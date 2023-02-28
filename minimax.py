@@ -3,6 +3,7 @@ from amsel_engine import Engine
 from dataclasses import dataclass
 import time
 import util
+import random
 
 
 @dataclass
@@ -13,6 +14,7 @@ class MinMaxValues:
 
 def order_moves(state):
     legal_moves = state.get_valid_moves()
+    random.shuffle(legal_moves)
     if len(legal_moves) <= 1:
         return legal_moves
     else:
