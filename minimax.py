@@ -57,7 +57,7 @@ class Minimax:
 
     def __init__(self, depth, threads):
         self.engine = Engine()
-        self.max_depth = depth
+        self.max_depth = depth + 1
         self.threads = threads
 
     def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
