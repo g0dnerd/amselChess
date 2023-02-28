@@ -128,7 +128,7 @@ class Minimax:
                         self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
                     processes.append((move, process))
                 for move, process in processes:
-                    thread_executor.submit(self.process_result, move, process, results, mm_values)
+                    thread_executor.submit(self.process_result, move, process, mm_values)
             best_value = float('-inf')
             best_move = None
             for move, result in self.results:
