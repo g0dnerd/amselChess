@@ -97,7 +97,7 @@ class Minimax:
             return best_value, best_move
 
     def find_best_move(self, state):
-        with ProcessPoolExecutor(max_workers=self.THREADS) as executor:
+        with ProcessPoolExecutor() as executor:
             mm_values = MinMaxValues()
             results = []
             initial_moves = order_moves(state)
