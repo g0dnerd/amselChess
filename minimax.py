@@ -1,5 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from amsel_engine import Engine
 from dataclasses import dataclass
 import time
@@ -59,7 +58,6 @@ class Minimax:
 
     def __init__(self):
         self.engine = Engine()
-        self.history = defaultdict(list)
 
     def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
         if path is None:
