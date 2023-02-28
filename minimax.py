@@ -1,5 +1,6 @@
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from collections import defaultdict
+from multiprocessing import Manager
 from amsel_engine import Engine
 from dataclasses import dataclass
 import time
@@ -59,7 +60,8 @@ class Minimax:
 
     def __init__(self):
         self.engine = Engine()
-        self.history = defaultdict(list)
+        self.results = []
+        self.lock = Manager().Lock()
 
     def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
         if path is None:
@@ -99,6 +101,16 @@ class Minimax:
                     break
             return best_value, best_move
 
+    def process_result(self, move, result, mm_values):
+        value, _ = result
+        if value > mm_values.alpha:
+            mm_values.alpha = value
+        if value > 1000:
+            mm_values.beta = 10000
+        result_tuple = (move, value)
+        with self.lock:
+            self.results.append(result_tuple)
+
     def find_best_move(self, state):
         start_time = time.time()
         with ThreadPoolExecutor(max_workers=self.THREADS) as thread_executor, \
@@ -116,12 +128,10 @@ class Minimax:
                         self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
                     processes.append((move, process))
                 for move, process in processes:
-                    if process.result()[0] > 1000:
-                        return move
-                    results.append((move, process))
+                    thread_executor.submit(self.process_result, move, process, results, mm_values)
             best_value = float('-inf')
             best_move = None
-            for move, result in results:
+            for move, result in self.results:
                 value, _ = result.result()
                 if value > best_value:
                     best_value = value
