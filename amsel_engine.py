@@ -270,7 +270,6 @@ class Engine:
         self.PAWN_CHAIN_BONUS = 10
 
     def evaluate_position(self, game):
-        # print('Evaluating position...')
         if game.game_result == '1-0':
             return 1000000
         elif game.game_result == '0-1':
