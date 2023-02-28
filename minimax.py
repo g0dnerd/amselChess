@@ -101,24 +101,18 @@ class Minimax:
 
     def find_best_move(self, state):
         start_time = time.time()
-        with ThreadPoolExecutor(max_workers=self.THREADS) as thread_executor, \
-                ProcessPoolExecutor() as process_executor:
+        with ThreadPoolExecutor(max_workers=self.THREADS) as thread_executor:
             mm_values = MinMaxValues()
             results = []
             initial_moves = order_moves(state)
-            batches = [initial_moves[i:i + self.BATCH_SIZE] for i in range(0, len(initial_moves), self.BATCH_SIZE)]
-            for batch in batches:
-                print('Spawning processes for batch', batch)
-                processes = []
-                for move in batch:
-                    new_state = state.apply_move(move[0], move[1])
-                    process = process_executor.submit(
-                        self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
-                    processes.append((move, process))
-                for move, process in processes:
-                    if process.result()[0] > 1000:
-                        return move
-                    results.append((move, process))
+            for move in initial_moves:
+                new_state = state.apply_move(move[0], move[1])
+                print('Submitting job for move', move)
+                result = thread_executor.submit(
+                    self.minimax, new_state, self.MAX_DEPTH - 1, mm_values, True, [move])
+                if result.result()[0] > 1000:
+                    return move
+                results.append((move, result))
             best_value = float('-inf')
             best_move = None
             for move, result in results:
