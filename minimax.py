@@ -119,6 +119,6 @@ class Minimax:
                     best_value = value
                     best_move = move
                 mm_values.alpha = max(mm_values.alpha, value)
-            total_time = time.perf_counter() - start_time
+            total_time = time.time() - start
             print(f'Found move {best_move} in {total_time:.4f} seconds')
             return best_move
