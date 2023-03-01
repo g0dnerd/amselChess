@@ -59,8 +59,9 @@ def order_moves(state):
 
 class Minimax:
 
-    def __init__(self, depth):
+    def __init__(self, depth, threads):
         self.engine = Engine()
+        self.threads = threads
         self.max_depth = depth + 1
 
     def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
