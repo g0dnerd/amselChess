@@ -1,5 +1,6 @@
 from game import Game
 from minimax import Minimax
+from mmax import Negamax
 import argparse
 # Command line interface to test the engine in.
 
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     threads = args.threads
     # Initialize the game
     game = Game()
-    minimax = Minimax(depth, threads)
+    minimax = Negamax(depth)
 
     # Play the game
     while not game.is_game_over():
