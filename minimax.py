@@ -72,7 +72,7 @@ class Minimax:
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
                 for move in order_moves(state):
                     child_state = state.apply_move(move[0], move[1])
-                    print('Starting thread for move', child_state.move_history)
+                    # print('Starting thread for move', child_state.move_history)
                     futures.append(executor.submit(self.alphabeta, child_state, depth-1, alpha, beta, False))
                 for future in concurrent.futures.as_completed(futures):
                     result, _ = future.result()
@@ -92,7 +92,7 @@ class Minimax:
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
                 for move in order_moves(state):
                     child_state = state.apply_move(move[0], move[1])
-                    print('Starting thread for move', child_state.move_history)
+                    # print('Starting thread for move', child_state.move_history)
                     futures.append(executor.submit(self.alphabeta, child_state, depth-1, alpha, beta, True))
                 for future in concurrent.futures.as_completed(futures):
                     result, _ = future.result()

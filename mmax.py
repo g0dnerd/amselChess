@@ -43,7 +43,7 @@ def order_moves(state):
 
 
 class Negamax:
-    def __init__(self, depth: object) -> object:
+    def __init__(self, depth):
         self.engine = Engine()
         self.max_depth = depth
 
