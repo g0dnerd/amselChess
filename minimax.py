@@ -58,69 +58,52 @@ def order_moves(state):
 
 
 class Minimax:
-
     def __init__(self, depth):
         self.engine = Engine()
         self.max_depth = depth + 1
 
-    def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
-        if path is None:
-            path = []
+    def alpha_beta(self, state, depth, alpha, beta, maximizing_player, path):
         if depth == 0 or state.is_game_over():
             return self.engine.evaluate_for_maximizing_player(state), None
-        if maximizing_player:
-            best_value = float('-inf')
-            best_move = None
-            for move in order_moves(state):
-                new_state = state.apply_move(move[0], move[1])
-                new_path = path + [move]
-                print(f'Evaluating line {new_path}')
-                value, _ = self.minimax(new_state, depth - 1, mm_values, False, new_path)
+
+        best_value = float('-inf') if maximizing_player else float('inf')
+        best_move = None
+
+        for move in order_moves(state):
+            new_state = state.apply_move(move[0], move[1])
+            new_path = path + [move]
+            print('Evaluating line', new_path)
+            value, _ = self.alpha_beta(new_state, depth - 1, alpha, beta, not maximizing_player, new_path)
+            if maximizing_player:
                 if value > best_value:
                     best_value = value
                     best_move = move
-                mm_values.alpha = max(mm_values.alpha, value)
-                if mm_values.alpha >= mm_values.beta:
+                alpha = max(alpha, value)
+                if alpha >= beta:
                     print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
                     break
-            return best_value, best_move
-        else:
-            best_value = float('inf')
-            best_move = None
-            for move in order_moves(state):
-                new_state = state.apply_move(move[0], move[1])
-                new_path = path + [move]
-                print(f'Evaluating line {new_path}')
-                value, _ = self.minimax(new_state, depth - 1, mm_values, True, new_path)
+            else:
                 if value < best_value:
                     best_value = value
                     best_move = move
-                mm_values.beta = min(mm_values.beta, value)
-                if mm_values.alpha >= mm_values.beta:
-                    print(f'Pruning {new_path} at depth {depth} with value {value}')
+                beta = min(beta, value)
+                if alpha >= beta:
+                    print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
                     break
-            return best_value, best_move
+
+        return best_value, best_move
+
+    def minimax(self, state, depth, maximizing_player, path=None):
+        if path is None:
+            path = []
+        alpha = float('-inf')
+        beta = float('inf')
+        best_value, best_move = self.alpha_beta(state, depth, alpha, beta, maximizing_player, path)
+        return best_value, best_move
 
     def find_best_move(self, state):
         start_time = time.time()
-        mm_values = MinMaxValues()
-        results = []
-        initial_moves = order_moves(state)
-        for move in initial_moves:
-            new_state = state.apply_move(move[0], move[1])
-            print('Processing move', move)
-            result = self.minimax(new_state, self.max_depth - 1, mm_values, True, [move])
-            if result[0] > 1000:
-                return move
-            results.append((move, result))
-            mm_values.alpha = max(mm_values.alpha, result[0])
-        best_value = float('-inf')
-        best_move = None
-        for move, result in results:
-            value, _ = result
-            if value > best_value:
-                best_value = value
-                best_move = move
+        best_value, best_move = self.minimax(state, self.max_depth - 1, True)
         total_time = time.time() - start_time
-        print(f'Found move {best_move} in {total_time:.4f} seconds')
+        print(f'Found move {best_move} with value {best_value} in {total_time:.4f} seconds')
         return best_move
