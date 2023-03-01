@@ -69,7 +69,7 @@ class Minimax:
             value = float('-inf')
             best_move = None
             futures = []
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
                 for move in order_moves(state):
                     child_state = state.apply_move(move[0], move[1])
                     print('Starting thread for move', child_state.move_history)
@@ -89,7 +89,7 @@ class Minimax:
             value = float('inf')
             best_move = None
             futures = []
-            with concurrent.futures.ThreadPoolExecutor() as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.threads) as executor:
                 for move in order_moves(state):
                     child_state = state.apply_move(move[0], move[1])
                     print('Starting thread for move', child_state.move_history)
