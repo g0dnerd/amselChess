@@ -15,8 +15,8 @@ if __name__ == "__main__":
     threads = args.threads
     # Initialize the game
     game = Game()
-    # minimax = Negamax(depth)
-    minimax = Minimax(depth, threads)
+    minimax = Negamax(depth)
+    # minimax = Minimax(depth, threads)
 
     # Play the game
     while not game.is_game_over():
@@ -28,7 +28,7 @@ if __name__ == "__main__":
             break
         elif choice == 'x':
             print('Calculating best move...')
-            move = minimax.search(game)
+            move = minimax.find_best_move(game)
             game.make_move(move[0], move[1])
         else:
             try:

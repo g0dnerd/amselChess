@@ -1,4 +1,5 @@
 import util
+import time
 
 
 def get_backward_pawns(game, color):
@@ -291,10 +292,15 @@ class Engine:
         return total_score / 100
 
     def evaluate_for_maximizing_player(self, game):
+        start_time = time.time()
         if game.current_player == 'white':
-            return self.evaluate_position(game)
+            score = self.evaluate_position(game)
+            print('Evaluation time: {}'.format(time.time() - start_time))
+            return score
         else:
-            return -self.evaluate_position(game)
+            score = -self.evaluate_position(game)
+            print('Evaluation time : {}'.format(time.time() - start_time))
+            return score
 
     def get_mobility_score(self, game):
         """Returns the mobility score of the board"""
