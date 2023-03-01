@@ -1,5 +1,5 @@
-import copy
-from concurrent.futures import ThreadPoolExecutor
+import threading
+import concurrent.futures
 import threading
 from amsel_engine import Engine
 from dataclasses import dataclass
@@ -10,10 +10,9 @@ import random
 
 @dataclass
 class MinMaxValues:
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.alpha: float = float('-inf')
-        self.beta: float = float('inf')
+    lock: threading.Lock()
+    alpha: float = float('-inf')
+    beta: float = float('inf')
 
 
 def order_moves(state):
@@ -60,45 +59,62 @@ def order_moves(state):
 class Minimax:
     def __init__(self, depth):
         self.engine = Engine()
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=6)
         self.max_depth = depth + 1
 
-    def alpha_beta(self, state, depth, alpha, beta, maximizing_player, path):
+    def alpha_beta(self, state, depth, values, maximizing_player, path):
         if depth == 0 or state.is_game_over():
             return self.engine.evaluate_for_maximizing_player(state), None
 
         best_value = float('-inf') if maximizing_player else float('inf')
         best_move = None
 
+        with values.lock:
+            if maximizing_player:
+                alpha = values.alpha
+            else:
+                beta = values.beta
+
         for move in order_moves(state):
             new_state = state.apply_move(move[0], move[1])
             new_path = path + [move]
             print('Evaluating line', new_path)
-            value, _ = self.alpha_beta(new_state, depth - 1, alpha, beta, not maximizing_player, new_path)
+
+            if maximizing_player:
+                future = self.executor.submit(
+                    self.alpha_beta, new_state, depth - 1, values, False, new_path)
+            else:
+                future = self.executor.submit(
+                    self.alpha_beta, new_state, depth - 1, values, True, new_path)
+
+            value, _ = future.result()
+
             if maximizing_player:
                 if value > best_value:
                     best_value = value
                     best_move = move
-                alpha = max(alpha, value)
-                if alpha >= beta:
-                    print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
-                    break
+                with values.lock:
+                    values.alpha = max(values.alpha, value)
+                    if values.alpha >= values.beta:
+                        print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
+                        break
             else:
                 if value < best_value:
                     best_value = value
                     best_move = move
-                beta = min(beta, value)
-                if alpha >= beta:
-                    print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
-                    break
+                with values.lock:
+                    values.beta = min(values.beta, value)
+                    if values.alpha >= values.beta:
+                        print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
+                        break
 
         return best_value, best_move
 
     def minimax(self, state, depth, maximizing_player, path=None):
         if path is None:
             path = []
-        alpha = float('-inf')
-        beta = float('inf')
-        best_value, best_move = self.alpha_beta(state, depth, alpha, beta, maximizing_player, path)
+        values = MinMaxValues(threading.Lock())
+        best_value, best_move = self.alpha_beta(state, depth, values, maximizing_player, path)
         return best_value, best_move
 
     def find_best_move(self, state):
