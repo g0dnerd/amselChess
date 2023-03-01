@@ -49,17 +49,16 @@ class Negamax:
 
     def alphabeta(self, state, depth, alpha, beta):
         if depth == 0 or state.is_game_over():
-            return self.engine.evaluate_position(state)
+            return self.engine.evaluate_for_maximizing_player(state)
 
         for move in order_moves(state):
             new_state = state.apply_move(move[0], move[1])
             print('Evaluating line', new_state.move_history)
-            value = -self.alphabeta(new_state, depth - 1, -beta, -alpha)
-            if value >= beta:
+            value = self.alphabeta(new_state, depth - 1, alpha, beta)
+            alpha = max(alpha, value)
+            if alpha >= beta:
                 print('Pruning line', new_state.move_history)
-                return beta
-            if value > alpha:
-                alpha = value
+                return alpha
 
         return alpha
 
@@ -74,7 +73,7 @@ class Negamax:
 
         for move in legal_moves:
             new_state = state.apply_move(move[0], move[1])
-            score = -self.alphabeta(new_state, self.max_depth, -beta, -alpha)
+            score = self.alphabeta(new_state, self.max_depth, alpha, beta)
             if score >= 1000:
                 return move
             if score > alpha:
