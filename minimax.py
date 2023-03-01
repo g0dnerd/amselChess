@@ -1,9 +1,7 @@
-import copy
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 import threading
 from amsel_engine import Engine
 from dataclasses import dataclass
-import time
 import util
 import random
 
@@ -11,7 +9,6 @@ import random
 @dataclass
 class MinMaxValues:
     def __init__(self):
-        self.lock = threading.Lock()
         self.alpha: float = float('-inf')
         self.beta: float = float('inf')
 
@@ -58,72 +55,57 @@ def order_moves(state):
 
 
 class Minimax:
-
-    def __init__(self, depth, threads):
+    def __init__(self, max_depth, threads):
         self.engine = Engine()
+        self.max_depth = max_depth
         self.threads = threads
-        self.max_depth = depth + 1
+        self.lock = threading.Lock()
 
-    def minimax(self, state, depth, mm_values: MinMaxValues, maximizing_player, path=None):
-        if path is None:
-            path = []
+    def alphabeta(self, state, depth, alpha, beta, maximizing_player):
         if depth == 0 or state.is_game_over():
             return self.engine.evaluate_for_maximizing_player(state), None
-        if maximizing_player:
-            best_value = float('-inf')
-            best_move = None
-            for move in order_moves(state):
-                new_state = state.apply_move(move[0], move[1])
-                new_path = path + [move]
-                print(f'Evaluating line {new_path}')
-                value, _ = self.minimax(new_state, depth - 1, mm_values, False, new_path)
-                if value > best_value:
-                    best_value = value
-                    best_move = move
-                mm_values.alpha = max(mm_values.alpha, value)
-                if mm_values.alpha >= mm_values.beta:
-                    if depth < self.max_depth and len(list(order_moves(state))) > 0:
-                        print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
-                        break
-            return best_value, best_move
-        else:
-            best_value = float('inf')
-            best_move = None
-            for move in order_moves(state):
-                new_state = state.apply_move(move[0], move[1])
-                new_path = path + [move]
-                print(f'Evaluating line {new_path}')
-                value, _ = self.minimax(new_state, depth - 1, mm_values, True, new_path)
-                if value < best_value:
-                    best_value = value
-                    best_move = move
-                mm_values.beta = min(mm_values.beta, value)
-                if mm_values.alpha >= mm_values.beta:
-                    if depth < self.max_depth and len(list(order_moves(state))) > 0:
-                        print(f'Pruning {new_path} at depth {self.max_depth - depth} with value {value}')
-                        break
-            return best_value, best_move
 
-    def find_best_move(self, state):
-        start_time = time.time()
-        mm_values = MinMaxValues()
-        results = []
-        initial_moves = order_moves(state)
-        for move in initial_moves:
-            new_state = state.apply_move(move[0], move[1])
-            print('Processing move', move)
-            result = self.minimax(new_state, self.max_depth - 1, mm_values, True, [move])
-            if result[0] > 1000:
-                return move
-            results.append((move, result))
-            mm_values.alpha = max(mm_values.alpha, result[0])
-        best_value = float('-inf')
-        best_move = None
-        for move, result in results:
-            value, _ = result
-            if value > best_value:
-                best_value = value
-                best_move = move
-        total_time = time.time() - start_time
-        print(f'Found move {best_move} in {total_time:.4f} seconds')
+        if maximizing_player:
+            value = float('-inf')
+            best_move = None
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for move in order_moves(state):
+                    child_state = state.apply_move(move[0], move[1])
+                    print('Starting thread for move', child_state.move_history)
+                    futures.append(executor.submit(self.alphabeta, child_state, depth-1, alpha, beta, False))
+                for future in concurrent.futures.as_completed(futures):
+                    result, _ = future.result()
+                    with self.lock:
+                        value = max(value, result)
+                        if value > alpha:
+                            alpha = value
+                            best_move = futures[futures.index(future)].result()[1]
+                        if alpha >= beta:
+                            print('Pruning')
+                            break
+            return value, best_move
+        else:
+            value = float('inf')
+            best_move = None
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for move in order_moves(state):
+                    child_state = state.apply_move(move[0], move[1])
+                    print('Starting thread for move', child_state.move_history)
+                    futures.append(executor.submit(self.alphabeta, child_state, depth-1, alpha, beta, True))
+                for future in concurrent.futures.as_completed(futures):
+                    result, _ = future.result()
+                    with self.lock:
+                        value = min(value, result)
+                        if value < beta:
+                            beta = value
+                            best_move = futures[futures.index(future)].result()[1]
+                        if alpha >= beta:
+                            print('Pruning')
+                            break
+            return value, best_move
+
+    def search(self, state):
+        _, best_move = self.alphabeta(state, self.max_depth, float('-inf'), float('inf'), True)
         return best_move
