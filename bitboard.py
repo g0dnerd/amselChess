@@ -1,6 +1,19 @@
 import util
 
 
+def bitboard_to_square_list(bitboard):
+    """
+    Convert a bitboard to a list of squares.
+    """
+    squares = []
+    while bitboard:
+        square_index = bin(bitboard & -bitboard).count('0') - 1
+        squares.append(square_index)
+        # Clear the least significant bit
+        bitboard &= bitboard - 1
+    return squares
+
+
 class BitboardGameState:
     def __init__(self, fen=None):
         if fen is not None:
@@ -20,7 +33,9 @@ class BitboardGameState:
             self.black_queens = 0x0800000000000000
             self.black_king = 0x1000000000000000
 
-        self.empty_squares = ~(self.white_pawns | self.white_knights | self.white_bishops | self.white_rooks | self.white_queens | self.white_king | self.black_pawns | self.black_knights | self.black_bishops | self.black_rooks | self.black_queens | self.black_king)
+        self.empty_squares = ~(self.white_pawns | self.white_knights | self.white_bishops | self.white_rooks |
+                               self.white_queens | self.white_king | self.black_pawns | self.black_knights |
+                               self.black_bishops | self.black_rooks | self.black_queens | self.black_king)
         self.occupied_squares = ~self.empty_squares
 
         self.bitboards = {
@@ -47,60 +62,96 @@ class BitboardGameState:
         self.rank_2 = 0x000000000000ff00
         self.rank_7 = 0x00ff000000000000
 
+        self.en_passant_target = 0
+
     def init_from_fen(self, fen):
         # Set up the board state from a FEN string
         pass  # TODO: implement
 
-    def get_legal_moves(self, position, color):
-        opponent = util.get_opponent_color(color)
-        # Calculate bitboard for all pawns
-        pawns = self.bitboards[color]["P"]
-
-        # Calculate bitboard for all pieces
-        occupied = self.bitboards[color]["all"] | self.bitboards[opponent]["all"]
-
-        # Calculate bitboard for all opponent pieces
-        opponents = self.bitboards[opponent]["all"]
-
+    def get_legal_moves(self, color):
+        """
+        Generate a bitboard of all legal moves of a given color.
+        :param color: str
+        :return: bitboard
+        """
         # Initialize bitboard for legal moves
         legal_moves = 0
 
+        legal_moves |= self.get_legal_pawn_moves(color)
+        legal_moves |= self.get_legal_knight_moves(color)
+        legal_moves |= self.get_legal_bishop_moves(color)
+        legal_moves |= self.get_legal_rook_moves(color)
+        legal_moves |= self.get_legal_queen_moves(color)
+        legal_moves |= self.get_legal_king_moves(color)
+
+        return legal_moves
+
+    def get_legal_pawn_moves(self, color):
+        # Initialize bitboard for legal moves
+        legal_moves = 0
+        opponent = util.get_opponent_color(color)
+        # Calculate bitboard for all opponent pieces
+        opponent_pieces = self.bitboards[opponent]["all"]
+
+        # Get all legal moves for pawns of a given color
+        # Calculate bitboard for all pawns
+        pawns = self.bitboards[color]['pawns']
+
         # Calculate bitboard for all forward moves
         if color == "white":
-            forward_moves = (pawns << 8) & ~occupied
+            forward_moves = (pawns << 8) & ~self.occupied_squares
         else:
-            forward_moves = (pawns >> 8) & ~occupied
+            forward_moves = (pawns >> 8) & ~self.occupied_squares
 
         # Calculate bitboard for all captures to the left
         if color == "white":
-            captures_left = ((pawns & self.not_a_file) << 7) & opponents
+            captures_left = ((pawns & self.not_a_file) << 7) & opponent_pieces
         else:
-            captures_left = ((pawns & self.not_h_file) >> 9) & opponents
+            captures_left = ((pawns & self.not_h_file) >> 9) & opponent_pieces
 
         # Calculate bitboard for all captures to the right
         if color == "white":
-            captures_right = ((pawns & self.not_h_file) << 9) & opponents
+            captures_right = ((pawns & self.not_h_file) << 9) & opponent_pieces
         else:
-            captures_right = ((pawns & self.not_a_file) >> 7) & opponents
+            captures_right = ((pawns & self.not_a_file) >> 7) & opponent_pieces
 
         # Add forward moves and captures to legal moves
         legal_moves |= forward_moves | captures_left | captures_right
 
         # Calculate bitboard for all double pawn pushes
         if color == "white":
-            double_pushes = ((pawns & self.rank_2) << 16) & ~occupied & ~(occupied << 8)
+            double_pushes = ((pawns & self.rank_2) << 16) & ~self.occupied_squares & ~(self.occupied_squares << 8)
         else:
-            double_pushes = ((pawns & self.rank_7) >> 16) & ~occupied & ~(occupied >> 8)
+            double_pushes = ((pawns & self.rank_7) >> 16) & ~self.occupied_squares & ~(self.occupied_squares >> 8)
 
         # Add double pawn pushes to legal moves
         legal_moves |= double_pushes
 
-        # Return a list of legal moves
-        return self.bitboard_to_move_list(legal_moves)
+        # Calculate bitboard for all en passant captures
+        if color == "white":
+            en_passant_captures = ((pawns & self.not_a_file) << 7) & self.en_passant_target
+        else:
+            en_passant_captures = ((pawns & self.not_h_file) >> 9) & self.en_passant_target
+
+        # Add en passant captures to legal moves
+        legal_moves |= en_passant_captures
 
     def bitboard_to_move_list(self, bitboard):
+        """
+        Convert a bitboard to a list of moves.
+        :param: bitboard
+        :return: list
+        """
         # Convert a bitboard to a list of moves
-        pass
+        move_list = []
+        # Iterate over each square in the bitboard
+        for square in bitboard_to_square_list(bitboard):
+            # Add the move to the move list
+            moves = self.get_legal_moves(square)
+            # Add each move to the move list
+            for move in moves:
+                move_list.append((square, move))
+        return move_list
 
     def is_legal_move(self, move):
         # Check if a move is legal
@@ -144,3 +195,4 @@ class BitboardGameState:
 
     def undo_move(self):
         # Undo the last move and restore the previous board state
+        pass  # TODO: implement
