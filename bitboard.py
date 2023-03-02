@@ -164,11 +164,11 @@ class BitboardGameState:
         pass
         # TODO: implement
 
-    def get_legal_moves_for_pawn(self, square, color):
+    def get_legal_moves_for_pawn(self, piece_bitboard, color):
         """
         Returns a bitboard representing all legal moves for a pawn piece on the given square, given the occupancy
         of the board and the color of the pawn.
-        :param square: int
+        :param piece_bitboard: bitboard
         :param color: str
         :return: bitboard
         """
@@ -176,7 +176,7 @@ class BitboardGameState:
 
         if color == 'white':
             # Single step forward
-            single_step = bit_utils.shift_north(square) & self.empty_squares
+            single_step = bit_utils.shift_north(piece_bitboard) & self.empty_squares
             moves |= single_step
 
             # Double step forward
@@ -185,25 +185,25 @@ class BitboardGameState:
             moves |= double_step
 
             # Capture left
-            left_capture = bit_utils.shift_nw(square) & self.occupied_squares & \
+            left_capture = bit_utils.shift_nw(piece_bitboard) & self.occupied_squares & \
                 self.opponent_pieces(color) & self.NOT_A_FILE
             moves |= left_capture
 
             # Capture right
-            right_capture = bit_utils.shift_ne(square) & self.occupied_squares & \
+            right_capture = bit_utils.shift_ne(piece_bitboard) & self.occupied_squares & \
                 self.opponent_pieces(color) & self.NOT_H_FILE
             moves |= right_capture
 
             # En passant left
-            if square in self.EN_PASSANT_LEFT and self.en_passant_target == bit_utils.shift_west(square):
-                moves |= bit_utils.shift_nw(square)
+            if piece_bitboard in self.EN_PASSANT_LEFT and self.en_passant_target == bit_utils.shift_west(piece_bitboard):
+                moves |= bit_utils.shift_nw(piece_bitboard)
 
             # En passant right
-            if square in self.EN_PASSANT_RIGHT and self.en_passant_target == bit_utils.shift_east(square):
-                moves |= bit_utils.shift_ne(square)
+            if piece_bitboard in self.EN_PASSANT_RIGHT and self.en_passant_target == bit_utils.shift_east(piece_bitboard):
+                moves |= bit_utils.shift_ne(piece_bitboard)
         else:
             # Single step forward
-            single_step = bit_utils.shift_south(square) & self.empty_squares
+            single_step = bit_utils.shift_south(piece_bitboard) & self.empty_squares
             moves |= single_step
 
             # Double step forward
@@ -212,22 +212,22 @@ class BitboardGameState:
             moves |= double_step
 
             # Capture left
-            left_capture = bit_utils.shift_sw(square) & self.occupied_squares & \
+            left_capture = bit_utils.shift_sw(piece_bitboard) & self.occupied_squares & \
                 self.opponent_pieces(color) & self.NOT_A_FILE
             moves |= left_capture
 
             # Capture right
-            right_capture = bit_utils.shift_se(square) & self.occupied_squares & \
+            right_capture = bit_utils.shift_se(piece_bitboard) & self.occupied_squares & \
                 self.opponent_pieces(color) & self.NOT_H_FILE
             moves |= right_capture
 
             # En passant left
-            if square in self.EN_PASSANT_LEFT and self.en_passant_target == bit_utils.shift_west(square):
-                moves |= bit_utils.shift_sw(square)
+            if piece_bitboard in self.EN_PASSANT_LEFT and self.en_passant_target == bit_utils.shift_west(piece_bitboard):
+                moves |= bit_utils.shift_sw(piece_bitboard)
 
             # En passant right
-            if square in self.EN_PASSANT_RIGHT and self.en_passant_target == bit_utils.shift_east(square):
-                moves |= bit_utils.shift_se(square)
+            if piece_bitboard in self.EN_PASSANT_RIGHT and self.en_passant_target == bit_utils.shift_east(piece_bitboard):
+                moves |= bit_utils.shift_se(piece_bitboard)
 
     def get_legal_moves_for_knight(self, square):
         """
@@ -258,7 +258,7 @@ class BitboardGameState:
 
         return moves
 
-    def get_legal_moves_for_bishop(self, square):
+        def get_legal_moves_for_bishop(self, square):
         """
         Returns a bitboard representing all legal moves for a bishop piece on the given square, given the occupancy
         of the board and the color of the bishop.
@@ -428,8 +428,9 @@ class BitboardGameState:
         :param blockers: bitboard
         :return: bitboard
         """
-        mask = get_bishop_mask(square)
-        return self.get_ray_attacks(square, mask) & blockers
+        attacks = self.get_ray_attacks(square, mask) & blockers
+        moves = bit_utils.mask_to_moves(attacks)
+        return moves
 
     def get_blockers(self, square):
         """
@@ -449,19 +450,32 @@ class BitboardGameState:
         :param mask: bitboard
         :return: bitboard
         """
-        # Compute the ray attacks to the north-east
-        attacks = self.get_slider_moves(square, bit_utils.shift_ne) & mask
+        rank_attacks = self.get_rank_attacks(square)
+        file_attacks = self.get_file_attacks(square)
+        return get_bishop_attacks(square) & mask | rank_attacks & bit_utils.FILE_A | file_attacks & bit_utils.RANK_8
 
-        # Compute the ray attacks to the north-west
-        attacks |= self.get_slider_moves(square, bit_utils.shift_nw) & mask
+    def get_rank_attacks(self, square, occupied_squares):
+        """Return a bitboard representing the squares that a rook on the given square attacks"""
+        rank_mask = RANK_MASKS[square // 8]
+        occupied = rank_mask & occupied_squares
+        left_occ = occupied & FILE_A_CLEAR_MASKS[square % 8]
+        right_occ = occupied & FILE_H_CLEAR_MASKS[square % 8]
+        left = left_occ << 1
+        right = right_occ >> 1
+        attacks = left_occ | right_occ | left | right
+        return attacks & RANK_MASKS[square // 8]
 
-        # Compute the ray attacks to the south-east
-        attacks |= self.get_slider_moves(square, bit_utils.shift_se) & mask
+    def get_file_attacks(self, square, occupied_squares):
+        """Return a bitboard representing the squares that a rook on the given square attacks"""
+        file_mask = FILE_MASKS[square % 8]
+        occupied = file_mask & occupied_squares
+        up_occ = occupied << 8
+        down_occ = occupied >> 8
+        up = get_single_bitboard(up_occ)
+        down = get_single_bitboard(down_occ)
+        attacks = up_occ | down_occ | up | down
+        return attacks & FILE_MASKS[square % 8]
 
-        # Compute the ray attacks to the south-west
-        attacks |= self.get_slider_moves(square, bit_utils.shift_sw) & mask
-
-        return attacks
 
     def is_checkmate(self, color):
         # Check if the given color is in checkmate
