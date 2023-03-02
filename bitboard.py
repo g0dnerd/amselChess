@@ -1,4 +1,5 @@
 import util
+from bit_utils import BitUtils
 
 
 def bitboard_to_square_list(bitboard):
@@ -57,18 +58,47 @@ class BitboardGameState:
             }
         }
 
-        self.not_h_file = 0xfefefefefefefefe
-        self.not_a_file = 0x7f7f7f7f7f7f7f7f
-        self.rank_2 = 0x000000000000ff00
-        self.rank_7 = 0x00ff000000000000
-
+        # Initialize the en passant target
         self.en_passant_target = 0
+
+        # Define constants for the a and h files and the second and seventh ranks
+        self.NOT_A_FILE = 0x7f7f7f7f7f7f7f7f
+        self.NOT_H_FILE = 0xfefefefefefefefe
+        self.RANK_2 = 0x000000000000ff00
+        self.RANK_7 = 0x00ff000000000000
+        self.EMPTY = 0
+        self.EN_PASSANT_LEFT = 0b0000000000000000000000000000000000100000000000000
+        self.EN_PASSANT_RIGHT = 0b0000000000000000000000000000000000010000000000000
 
     def init_from_fen(self, fen):
         # Set up the board state from a FEN string
         pass  # TODO: implement
 
-    def get_legal_moves(self, color):
+    def starting_rank(self, color):
+        """
+        Return the starting rank for a given color.
+        :param color:
+        :return: bitboard
+        """
+        if color == 'white':
+            return self.RANK_2
+        else:
+            return self.RANK_7
+
+    def opponent_pieces(self, color):
+        """
+        Return a bitboard representing the pieces of the opponent of the given color.
+        :param color: str
+        :return: bitboard
+        """
+        if color == 'white':
+            return self.black_pawns | self.black_knights | self.black_bishops | self.black_rooks | self.black_queens | \
+                self.black_king
+        else:
+            return self.white_pawns | self.white_knights | self.white_bishops | self.white_rooks | self.white_queens | \
+                self.white_king
+
+    def get_all_legal_moves(self, color):
         """
         Generate a bitboard of all legal moves of a given color.
         :param color: str
@@ -77,64 +107,94 @@ class BitboardGameState:
         # Initialize bitboard for legal moves
         legal_moves = 0
 
-        legal_moves |= self.get_legal_pawn_moves(color)
-        legal_moves |= self.get_legal_knight_moves(color)
-        legal_moves |= self.get_legal_bishop_moves(color)
-        legal_moves |= self.get_legal_rook_moves(color)
-        legal_moves |= self.get_legal_queen_moves(color)
-        legal_moves |= self.get_legal_king_moves(color)
+        legal_moves |= self.get_all_legal_pawn_moves(color)
+        legal_moves |= self.get_all_legal_knight_moves(color)
+        legal_moves |= self.get_all_legal_bishop_moves(color)
+        legal_moves |= self.get_all_legal_rook_moves(color)
+        legal_moves |= self.get_all_legal_queen_moves(color)
+        legal_moves |= self.get_all_legal_king_moves(color)
 
         return legal_moves
 
-    def get_legal_pawn_moves(self, color):
-        # Initialize bitboard for legal moves
-        legal_moves = 0
-        opponent = util.get_opponent_color(color)
-        # Calculate bitboard for all opponent pieces
-        opponent_pieces = self.bitboards[opponent]["all"]
+    def get_all_legal_pawn_moves(self, color):
+        pass
+        # TODO: implement
 
-        # Get all legal moves for pawns of a given color
-        # Calculate bitboard for all pawns
-        pawns = self.bitboards[color]['pawns']
+    def get_legal_moves_for_pawn(self, square, color):
+        """
+        Returns a bitboard representing all legal moves for a pawn piece on the given square, given the occupancy
+        of the board and the color of the pawn.
+        :param square: int
+        :param color: str
+        :return: bitboard
+        """
+        moves = 0
 
-        # Calculate bitboard for all forward moves
-        if color == "white":
-            forward_moves = (pawns << 8) & ~self.occupied_squares
+        if color == 'white':
+            # Single step forward
+            single_step = BitUtils.shift_north(square) & self.empty_squares
+            moves |= single_step
+
+            # Double step forward
+            double_step = BitUtils.shift_north(single_step) & self.empty_squares & \
+                self.starting_rank(color) & BitUtils.shift_north(self.EMPTY)
+            moves |= double_step
+
+            # Capture left
+            left_capture = BitUtils.shift_nw(square) & self.occupied_squares & \
+                self.opponent_pieces(color) & self.NOT_A_FILE
+            moves |= left_capture
+
+            # Capture right
+            right_capture = BitUtils.shift_ne(square) & self.occupied_squares & \
+                self.opponent_pieces(color) & self.NOT_H_FILE
+            moves |= right_capture
+
+            # En passant left
+            if square in self.EN_PASSANT_LEFT and self.en_passant_target == BitUtils.shift_west(square):
+                moves |= BitUtils.shift_nw(square)
+
+            # En passant right
+            if square in self.EN_PASSANT_RIGHT and self.en_passant_target == BitUtils.shift_east(square):
+                moves |= BitUtils.shift_ne(square)
         else:
-            forward_moves = (pawns >> 8) & ~self.occupied_squares
+            # Single step forward
+            single_step = BitUtils.shift_south(square) & self.empty_squares
+            moves |= single_step
 
-        # Calculate bitboard for all captures to the left
-        if color == "white":
-            captures_left = ((pawns & self.not_a_file) << 7) & opponent_pieces
-        else:
-            captures_left = ((pawns & self.not_h_file) >> 9) & opponent_pieces
+            # Double step forward
+            double_step = BitUtils.shift_south(single_step) & self.empty_squares & \
+                self.starting_rank(color) & BitUtils.shift_south(self.EMPTY)
+            moves |= double_step
 
-        # Calculate bitboard for all captures to the right
-        if color == "white":
-            captures_right = ((pawns & self.not_h_file) << 9) & opponent_pieces
-        else:
-            captures_right = ((pawns & self.not_a_file) >> 7) & opponent_pieces
+            # Capture left
+            left_capture = BitUtils.shift_sw(square) & self.occupied_squares & \
+                self.opponent_pieces(color) & self.NOT_A_FILE
+            moves |= left_capture
 
-        # Add forward moves and captures to legal moves
-        legal_moves |= forward_moves | captures_left | captures_right
+            # Capture right
+            right_capture = BitUtils.shift_se(square) & self.occupied_squares & \
+                self.opponent_pieces(color) & self.NOT_H_FILE
+            moves |= right_capture
 
-        # Calculate bitboard for all double pawn pushes
-        if color == "white":
-            double_pushes = ((pawns & self.rank_2) << 16) & ~self.occupied_squares & ~(self.occupied_squares << 8)
-        else:
-            double_pushes = ((pawns & self.rank_7) >> 16) & ~self.occupied_squares & ~(self.occupied_squares >> 8)
+            # En passant left
+            if square in self.EN_PASSANT_LEFT and self.en_passant_target == BitUtils.shift_west(square):
+                moves |= BitUtils.shift_sw(square)
 
-        # Add double pawn pushes to legal moves
-        legal_moves |= double_pushes
+            # En passant right
+            if square in self.EN_PASSANT_RIGHT and self.en_passant_target == BitUtils.shift_east(square):
+                moves |= BitUtils.shift_se(square)
 
-        # Calculate bitboard for all en passant captures
-        if color == "white":
-            en_passant_captures = ((pawns & self.not_a_file) << 7) & self.en_passant_target
-        else:
-            en_passant_captures = ((pawns & self.not_h_file) >> 9) & self.en_passant_target
-
-        # Add en passant captures to legal moves
-        legal_moves |= en_passant_captures
+    def get_legal_moves_for_knight(self, square, color):
+        """
+        Returns a bitboard representing all legal moves for a knight piece on the given square, given the occupancy
+        of the board and the color of the knight.
+        :param square:
+        :param color:
+        :return: bitboard
+        """
+        pass
+        # TODO: implement
 
     def bitboard_to_move_list(self, bitboard):
         """
@@ -147,19 +207,114 @@ class BitboardGameState:
         # Iterate over each square in the bitboard
         for square in bitboard_to_square_list(bitboard):
             # Add the move to the move list
-            moves = self.get_legal_moves(square)
+            moves = self.get_legal_moves_for_square(square)
             # Add each move to the move list
             for move in moves:
                 move_list.append((square, move))
         return move_list
 
+    def get_legal_moves_for_square(self, square):
+        """
+        Get all legal moves for the piece on the given square.
+        :param square:
+        :return: list
+        """
+        legal_moves = 0
+        # Get the piece type and color for the piece on the given square
+        piece_type, color = self.get_piece_type_and_color(square)
+        # Get the bitboard for the piece on the given square
+        piece_bitboard = self.bitboards[color][piece_type]
+        # Call the appropriate function to get the legal moves for the piece
+        if piece_type == 'pawn':
+            legal_moves = self.get_legal_moves_for_pawn(square, piece_bitboard, color)
+        elif piece_type == 'knight':
+            legal_moves = self.get_legal_moves_for_knight(square, piece_bitboard, color)
+        elif piece_type == 'bishop':
+            legal_moves = self.get_legal_moves_for_bishop(square, piece_bitboard, color)
+        elif piece_type == 'rook':
+            legal_moves = self.get_legal_moves_for_rook(square, piece_bitboard, color)
+        elif piece_type == 'queen':
+            legal_moves = self.get_legal_moves_for_queen(square, piece_bitboard, color)
+        elif piece_type == 'king':
+            legal_moves = self.get_legal_moves_for_king(square, piece_bitboard, color)
+        # Return the list of legal moves
+        return bitboard_to_square_list(legal_moves)
+
+    def get_piece_type_and_color(self, square):
+        """
+        Get the piece type and color for the piece on the given square.
+        :param square: int
+        :return: tuple
+        """
+        # Get the bitboard for the given square
+        square_bitboard = 1 << square
+        # Check if the square is occupied by a white piece
+        if self.white_pawns & square_bitboard:
+            return 'pawn', 'white'
+        elif self.white_knights & square_bitboard:
+            return 'knight', 'white'
+        elif self.white_bishops & square_bitboard:
+            return 'bishop', 'white'
+        elif self.white_rooks & square_bitboard:
+            return 'rook', 'white'
+        elif self.white_queens & square_bitboard:
+            return 'queen', 'white'
+        elif self.white_king & square_bitboard:
+            return 'king', 'white'
+        # Check if the square is occupied by a black piece
+        elif self.black_pawns & square_bitboard:
+            return 'pawn', 'black'
+        elif self.black_knights & square_bitboard:
+            return 'knight', 'black'
+        elif self.black_bishops & square_bitboard:
+            return 'bishop', 'black'
+        elif self.black_rooks & square_bitboard:
+            return 'rook', 'black'
+        elif self.black_queens & square_bitboard:
+            return 'queen', 'black'
+        elif self.black_king & square_bitboard:
+            return 'king', 'black'
+        # If the square is empty, return None
+        else:
+            return None, None
+
     def is_legal_move(self, move):
         # Check if a move is legal
         pass  # TODO: implement
 
-    def is_check(self, color):
+    def is_check(self, color, opponent_attacks):
+        """
+        Takes in the bitboard for the current game state and the bitboard for all
+        possible attacks by the opponent's pieces.
+        Returns True if the king of the moving player is in check, and False otherwise.
+        :param color: str
+        :param opponent_attacks: bitboard
+        :return: bool
+        """
         # Check if the given color is in check
-        pass  # TODO: implement
+        return (self.bitboards[color]['king'] & opponent_attacks) != 0
+
+    def get_opponent_attacks_bitboard(self, color):
+        """
+        Takes in the color of the player whose turn it is, and returns a bitboard
+        of all squares that are attacked by the opponent's pieces.
+        :param color: str
+        :return: bitboard
+        """
+        # Get the opponent's color
+        opponent = util.get_opponent_color(color)
+        # Initialize bitboard for opponent attacks
+        opponent_attacks = 0
+        # Iterate over each piece type
+        for piece_type in self.bitboards[opponent]:
+            # Get the bitboard for the current piece type
+            piece_bitboard = self.bitboards[opponent][piece_type]
+            while piece_bitboard:
+                square_index = BitUtils.get_lsb_index(piece_bitboard)
+                attacks = attack_utils.get_attacks_for_piece(piece_type, square_index, self.occupied_squares)
+                opponent_attacks |= attacks
+                piece_bitboard ^= BitUtils.get_bitboard_for_square(square_index)
+        return opponent_attacks
 
     def is_checkmate(self, color):
         # Check if the given color is in checkmate
