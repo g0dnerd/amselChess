@@ -3,18 +3,15 @@
 # Upon running this file, the test results will be printed to the console.
 
 import unittest
-from bitboard import BitboardGameState
+from bitboard import BitBoard
 
 
 class TestChessEngine(unittest.TestCase):
     def setUp(self):
-        self.state = BitboardGameState()
+        self.state = BitBoard()
 
-    def test_get_legal_moves_pawn(self):
-        # Test pawn moves
-        move_bb = self.state.get_legal_moves_for_bishop(2)
-        move_list = self.state.bitboard_to_move_list(move_bb)
-        print(move_list)
+    def test_print(self):
+        self.state.print_board()
 
 
 if __name__ == '__main__':
